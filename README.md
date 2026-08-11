@@ -88,3 +88,11 @@ steps in [TASK2.md](TASK2.md).
 
 `WardenEscrow` fund + hold, verified on Coston2 via real FAssets Direct Minting. Generic
 condition struct confirmed genuinely vertical-agnostic.
+
+## Phase 2 (Happy Path) — see [PHASE2.md](PHASE2.md)
+
+Full live round trip, no mocked steps: a real weather API confirms a condition via FDC's
+`Web2Json` attestation type, which triggers `WardenEscrow`'s one generic release hook, which
+redeems FXRP for real XRP paid out automatically on XRPL — zero manual intervention after the
+pipeline starts. Also settles the PMW question raised in the brief (not developer-available
+yet, same pattern as Task 2's FCC) in favor of plain FAssets `redeem()`.
