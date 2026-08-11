@@ -75,14 +75,13 @@ Each step also runs standalone (`node scripts/0N-*.mjs`) and persists progress t
 
 ## Task 2 (FCE) — see [TASK2.md](TASK2.md)
 
-Picked back up after this was written: the toolchain got installed after all (Docker, Go,
-Foundry, jq all ended up native on Windows via Git Bash rather than WSL — see TASK2.md for
-why). The `CHECK_GREATER_THAN_10` extension logic is fully implemented and verified by a real
-unit test suite (genuine ECIES encrypt/decrypt, a leak-detector, a wrong-key-fails test), and
-the contract is really deployed and registered on live Coston2. What's still blocked is
-standing up the actual running TEE — a flaky Docker Desktop on this machine plus Flare's
-indexer DB credentials not being self-serve. Full writeup, live artifacts, and exact repro
-steps in [TASK2.md](TASK2.md).
+**Working, verified live on Coston2.** `CHECK_GREATER_THAN_10` runs on a real registered TEE
+that reached on-chain PRODUCTION status; a real instruction was sent with its input ECIES-encrypted
+client-side (only a 125-byte ciphertext ever touches the chain), and the TEE returned
+`{result: true, checkedAt: 1}` — the leak-detector guarantee from the unit suite, now proven
+live, not just in tests. Full writeup, live artifacts (tx hashes, teeId, instruction IDs), and
+every gotcha hit along the way (including two real bugs in the scaffold's re-registration flow)
+in [TASK2.md](TASK2.md).
 
 ## Phase 1 (Escrow Core) — see [PHASE1.md](PHASE1.md)
 

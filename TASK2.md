@@ -1,6 +1,85 @@
 # Warden — Task 2: Minimal FCE Ingest → Attestation Loop
 
-Status: **mechanism implemented and verified at the code level; full live-TEE round-trip blocked by infrastructure outside this session's control.** Flagging per the spike's own stop-condition rather than continuing to grind.
+Status: **working, verified end to end on live Coston2 — real TEE, real PRODUCTION status, real attestation, input never touched the chain.**
+
+## Final result (2026-08-11)
+
+The full chain the original spike asked for, live:
+
+1. `CHECK_GREATER_THAN_10` availability check reached **PRODUCTION** status on-chain — `getTeeMachineStatus(teeId)` returns `2`.
+2. Sent a real instruction through the live TEE with the input (`42`) ECIES-encrypted client-side. Only a 125-byte ciphertext appears in the transaction's calldata.
+3. Response: `{Result: true, CheckedAt: 1}` — exactly the two fields the extension is coded to return, nothing else.
+4. Leak-detector and wrong-key-fails-decryption tests (from the original unit suite) still pass — the live run adds a real, on-chain-verifiable version of the same guarantee.
+
+**Live artifacts:**
+- `teeId`: `0x43D847e15C46A93587a3f90E8C32c035Bec4f9cE`
+- `extensionId`: `66120` (`0x...010248`), `InstructionSender`: `0xc594F0BE29aD3b30388e712683661138CC7c3A3C`
+- Availability-check transaction and the `updateTeeMachineSettings` fix (see gotchas): on Coston2, deployer `0x43819337A798C9CC0c6E2165980c7F77Ac395ff9`
+- `CHECK_GREATER_THAN_10` instruction: tx `0xd6f41bbaac989d6ffdeb3ddf9ddbe470d915dbafb223403fd4b83293c2fc9e85`, instructionId `0x707f27c6d1268b95215e3ce4755b9df762c3e5376d1062666f8539fbb7e550b4` — https://coston2-explorer.flare.network/tx/0xd6f41bbaac989d6ffdeb3ddf9ddbe470d915dbafb223403fd4b83293c2fc9e85 — calldata contains only the ciphertext, never `42`.
+- Extension proxy tunnel (ephemeral quick tunnel, will rotate on restart — not meant to be durable): `https://knitting-idaho-harmony-follows.trycloudflare.com`
+
+## What it took to get here (see full narrative below for the earlier walls)
+
+Beyond the Docker Desktop saga and the indexer DB credentials (both resolved — see "Docker Desktop root-caused and fixed" and the indexer DB section below), two more genuine bugs surfaced only once the stack was actually healthy enough to reach them:
+
+- **The on-chain-registered proxy URL doesn't update on re-registration.** `register()` (called only from `PreRegistration`) bakes `EXT_PROXY_URL` into the TEE machine's on-chain record permanently. Re-running `post-build.sh` against an already-registered `teeId` skips straight to requesting a fresh attestation challenge — it never re-registers, so a rotated tunnel URL never gets updated on-chain, and every availability check 404s against the stale address forever. `docs/cloudflared.md`'s guidance ("Tunnel rotated? Update EXT_PROXY_URL, re-run post-build.sh") is incomplete for a machine that's already past first registration. The actual fix: call `updateTeeMachineSettings(teeId, teeProxyId, newUrl)` directly on the `FlareTeeManager` diamond (selector `0x06ed5da4`, found in the `go-flare-common` Go bindings — `IMachineManagerTeeMachineRegistry`'s minimal interface in this repo doesn't expose it). Only an option if the caller is the machine's registered owner.
+- **Restarting `extension-tee` alone desyncs it from `ext-proxy`.** They pair up on startup; restarting only one side leaves the other holding a stale session, and every proxy→node call fails with `'forbidden': invalid teeID` — including the proxy's own periodic `/info` refresh, so `/info` kept returning a cached, stale response that looked identical to before the restart (this is what made it briefly look like `SIMULATED_TEE` used a deterministic keypair — it doesn't; the proxy just wasn't asking the new process). Fix: `docker compose up -d --force-recreate ext-proxy extension-tee` — both together, every time either one needs a fresh identity.
+
+## Original diagnosis and narrative (2026-08-10 → 2026-08-11)
+
+Status at the time of the original pass below: **mechanism implemented and verified at the code level; full live-TEE round-trip blocked by infrastructure outside this session's control.** Flagging per the spike's own stop-condition rather than continuing to grind. (Superseded by the live result above — kept for the full record of what was tried.)
+
+## Update (2026-08-11): redeploy diagnosed, toolchain rebuilt, Docker Desktop is the wall
+
+Flare's team posted that Coston2's `FlareTeeManager` diamond was redeployed (old address dead since 2026-07-22, live address `0x1a9C4A0f9D76c0b1D91d22E24E573a9b377618aE`). Revisited this session to check whether that broke our registration and to try again now that the toolchain issue could be re-attempted.
+
+**Diagnosis — our registration was never affected.** Queried the live manager directly (`cast call` / ethers, both agree):
+- `nextPublicExtensionId()` → `66125`
+- `getTeeExtensionInstructionsSender(66120)` → `0xc594F0BE29aD3b30388e712683661138CC7c3A3C`
+
+That's our `InstructionSender`, still correctly registered — extension ID `66120` (`0x...010248`) was registered *after* the redeploy already happened, against the current live manager. `config/coston2/deployed-addresses.json` in the scaffold also already pointed at the live address. Nothing to fix here.
+
+**Toolchain rebuild.** Go and Foundry (`cast`/`forge`) had disappeared from this machine entirely since the first Task 2 pass (not just off PATH — absent from disk). Reinstalled both natively on Windows (Go 1.26.5 to `%USERPROFILE%\sdk\go`, Foundry via `foundryup` to `%USERPROFILE%\.foundry`), both verified working.
+
+**Docker Desktop — the actual, now-well-diagnosed wall.** With Go/Foundry back, got as far as building both Docker images for real:
+- `tee-proxy` built successfully from Flare's pinned source (`v0.0.18`).
+- `extension-tee` got through `go mod download`, `go mod verify`, and most of its build before Docker itself broke underneath it.
+
+Along the way, hit **five distinct Docker Desktop failure modes** in one session, all traceable to the same underlying instability rather than anything in our config:
+
+1. **Stale `dockerInference` reparse-point socket** (the original bug from the first pass) — `%LOCALAPPDATA%\Docker\run\dockerInference` becomes unremovable on relaunch: `remove ...\dockerInference: The file cannot be accessed by the system.` Recurred **three separate times** across this session, including after explicitly disabling the feature.
+2. **`EnableDockerAI: false` in `settings-store.json` does not prevent the crash.** Set it, confirmed it stuck (didn't get silently reverted), relaunched — the Inference Manager still tried to bind the same socket and crashed the same way. The toggle doesn't gate the subsystem's startup socket bind, only its usability.
+3. **Same bug on a second subsystem**: `%LOCALAPPDATA%\docker-secrets-engine\engine.sock` hit the identical "file cannot be accessed by the system" error — confirming this is a general Windows-reparse-point handling bug in Docker Desktop 4.84.0, not specific to any one feature.
+4. **Read-only VM filesystem**: `write /var/lib/docker/buildkit/containerd-overlayfs/metadata_v2.db: read-only file system`, mid-build. Plausibly collateral damage from the forceful process kills used to clear the stale sockets above — killing Docker Desktop mid-operation can leave its WSL2 VM disk in a dirty state that remounts read-only.
+5. **vpnkit-bridge / VHD-attachment crash loop**: after a restart, `com.docker.backend` looped every 1–3 seconds through `engine linux/wsl: starting → stopping → stopped → starting` for about 40 seconds, then separately hit `WSL_E_USER_VHD_ALREADY_ATTACHED` on `docker_data.vhdx`. `wsl --shutdown` cleared the immediate loop, but the next relaunch crashed again on failure mode #1.
+
+None of these are configuration issues on our side — they're Docker Desktop's own startup-sequence races on this specific Windows machine, confirmed by direct log inspection (`com.docker.backend.exe.log`, `init.log`) each time, not guessed at. A stale-file rename clears any individual instance temporarily; none of the fixes tried (rename, disable-AI-toggle, `wsl --shutdown`, repeated clean restarts) made it durable across relaunches.
+
+**Net:** if a machine with a stable Docker Desktop install picks this up, the path is very short from here — `scripts/pre-build.sh` doesn't need to be re-run (registration is live and correct), the images are already built, and `scripts/start-services.sh --chain coston2` should proceed straight to the indexer DB step (still gated separately — see Wall 2 below, VPN access to `35.241.249.150:3306` plus a database name were still not in hand as of this pass).
+
+### Docker Desktop root-caused and fixed
+
+The fifth failure mode (`WSL_E_USER_VHD_ALREADY_ATTACHED` / `vpnkit-bridge` crash loop) turned out to be the one worth chasing: it pointed at real corruption in the `docker-desktop` WSL2 distro itself, not just a transient stale-file race. Fix that actually stuck, unlike every file-rename attempt before it:
+
+```powershell
+wsl --shutdown
+wsl --unregister docker-desktop
+# "docker-desktop-data" doesn't exist on this Docker Desktop version (4.84.0
+# uses a single distro + a separate data-disk VHDX, not two distros) —
+# "no distribution with the supplied name" here is expected, not an error.
+```
+Then fully kill any lingering `Docker Desktop`/`com.docker.backend`/`docker` processes (a stale instance from before the reset will otherwise block the relaunch from showing anything) and relaunch. Docker Desktop rebuilds the `docker-desktop` distro from scratch on next launch — slower first boot, but the images/containers/volumes on the separate data disk survive intact (confirmed: an unrelated image from another project on this machine was still there afterward), and so did the buildx cache — the rebuild of both `tee-proxy` and `extension-tee` came back almost entirely `CACHED`.
+
+**One more Windows-specific snag after that**: `docker compose up` failed binding Redis's port — `listen tcp4 127.0.0.1:6382: bind: An attempt was made to access a socket in a way forbidden by its access permissions`. Not a real port conflict — `netsh interface ipv4 show excludedportrange protocol=tcp` showed `6382` falls inside a Windows dynamic port-exclusion range (`6330–6429`, likely reserved by Hyper-V/WSL's NAT). Worked around by overriding `REDIS_BIND=127.0.0.1:16382` in `.env.coston2` (the compose file already parameterizes this: `"${REDIS_BIND:-127.0.0.1:6382}:6379"`). Worth checking `netsh interface ipv4 show excludedportrange protocol=tcp` before assuming any Windows Docker port-bind failure is a real conflict — it usually isn't.
+
+With both of those fixed, `redis`, `ext-proxy`, and `extension-tee` all started cleanly. **Wall 2 (indexer DB) is now the only thing standing between this and a live TEE**, confirmed directly from the container's own crash:
+
+```
+connecting to database: opening mysql connection to <indexer-db-host>:3306/<indexer-db-name>
+  as <indexer-db-user>: dial tcp: lookup <indexer-db-host>: no such host
+```
+
+`config/proxy/extension_proxy.coston2.docker.toml` still has the literal placeholder strings — the hackathon-shared username (`hackathon_user_57`) is filled in now, but the host, database name, and password were never provided. `docs/deployment-steps.md` documents the host as `35.241.249.150`, gated behind VPN access this session never had. The moment those three values (VPN access, database name, password) are in hand, `bash ./scripts/start-services.sh --chain coston2` should bring the whole stack up — nothing else in the pipeline is expected to need further debugging.
 
 ## What this proves (and what it doesn't, yet)
 
