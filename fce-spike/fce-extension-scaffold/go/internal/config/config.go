@@ -17,6 +17,9 @@ const (
 	OPTypeThreshold             = "THRESHOLD"
 	OPCommandCheckGreaterThan10 = "CHECK_GREATER_THAN_10"
 
+	OPTypeDispute            = "DISPUTE"
+	OPCommandRuleOnEvidence  = "RULE_ON_EVIDENCE"
+
 	TimeoutShutdown = 5 * time.Second
 )
 

@@ -277,6 +277,101 @@ func SendCheckGreaterThan10(s *support.Support, instructionSenderAddress common.
 	return instructionSent.InstructionId, receipt.TxHash, nil
 }
 
+// EvidenceClaim and RuleOnEvidenceRequest are declared here rather than
+// imported from the extension's go/pkg/types — tools/ is its own Go module
+// (see tools/go.mod), deliberately independent of any one language
+// implementation, so this tool asserts on the wire format via its own local
+// copy, same discipline as tools/cmd/run-test's checkGreaterThan10Response.
+type EvidenceClaim struct {
+	ClaimedTimestampUnix uint64 `json:"claimedTimestampUnix"`
+}
+
+type RuleOnEvidenceRequest struct {
+	EscrowID        uint64        `json:"escrowId"`
+	EvidenceA       EvidenceClaim `json:"evidenceA"`
+	EvidenceB       EvidenceClaim `json:"evidenceB"`
+	WindowStartUnix uint64        `json:"windowStartUnix"`
+	WindowEndUnix   uint64        `json:"windowEndUnix"`
+}
+
+// EncryptRuleOnEvidenceRequest JSON-encodes a RuleOnEvidenceRequest (both
+// parties' claimed timestamps plus the FDC-verified window) and
+// ECIES-encrypts the whole thing to the TEE's public key, same pattern as
+// EncryptCheckGreaterThan10Value. Neither party's claim is ever plaintext
+// outside this function and the enclave.
+func EncryptRuleOnEvidenceRequest(teePubKey *ecies.PublicKey, req RuleOnEvidenceRequest) ([]byte, error) {
+	plaintext, err := json.Marshal(req)
+	if err != nil {
+		return nil, errors.Errorf("marshal request: %s", err)
+	}
+
+	ciphertext, err := ecies.Encrypt(rand.Reader, teePubKey, plaintext, nil, nil)
+	if err != nil {
+		return nil, errors.Errorf("ECIES encrypt: %s", err)
+	}
+
+	return ciphertext, nil
+}
+
+// SendRuleOnEvidence submits an already-ECIES-encrypted dispute-evidence
+// blob on-chain. The caller is responsible for encrypting via
+// EncryptRuleOnEvidenceRequest first — this function only ever sees
+// ciphertext, and so does the chain.
+func SendRuleOnEvidence(s *support.Support, instructionSenderAddress common.Address, encryptedEvidence []byte) (common.Hash, common.Hash, error) {
+	sender, err := helloworld.NewHelloWorldInstructionSender(instructionSenderAddress, s.ChainClient)
+	if err != nil {
+		return common.Hash{}, common.Hash{}, errors.Errorf("failed to bind contract: %s", err)
+	}
+
+	opts, err := bind.NewKeyedTransactorWithChainID(s.Prv, s.ChainID)
+	if err != nil {
+		return common.Hash{}, common.Hash{}, errors.Errorf("failed to create transactor: %s", err)
+	}
+	opts.Value = big.NewInt(1000000) // Instruction fee in wei — must match registry's required fee
+
+	tx, err := sender.SendRuleOnEvidence(opts, encryptedEvidence)
+	if err != nil {
+		reason := fccutils.DecodeRevertReason(err)
+		if reason == "" {
+			parsed, _ := helloworld.HelloWorldInstructionSenderMetaData.GetAbi()
+			if parsed != nil {
+				callData, packErr := parsed.Pack("sendRuleOnEvidence", encryptedEvidence)
+				if packErr == nil {
+					from := crypto.PubkeyToAddress(s.Prv.PublicKey)
+					reason = fccutils.SimulateAndDecodeRevert(
+						s.ChainClient, from, instructionSenderAddress,
+						big.NewInt(1000000), callData,
+					)
+				}
+			}
+		}
+		if reason != "" {
+			return common.Hash{}, common.Hash{}, errors.Errorf("failed to send instruction: %s (revert reason: %s)", err, reason)
+		}
+		return common.Hash{}, common.Hash{}, errors.Errorf("failed to send instruction: %s", err)
+	}
+
+	receipt, err := bind.WaitMined(context.Background(), s.ChainClient, tx)
+	if err != nil {
+		return common.Hash{}, common.Hash{}, errors.Errorf("failed waiting for transaction: %s", err)
+	}
+
+	if receipt.Status != 1 {
+		return common.Hash{}, common.Hash{}, errors.Errorf("transaction failed with status: %d", receipt.Status)
+	}
+
+	if len(receipt.Logs) == 0 {
+		return common.Hash{}, common.Hash{}, errors.New("no logs found in receipt")
+	}
+
+	instructionSent, err := s.TeeVerification.ParseTeeInstructionsSent(*receipt.Logs[0])
+	if err != nil {
+		return common.Hash{}, common.Hash{}, errors.Errorf("failed to parse TeeInstructionsSent event: %s", err)
+	}
+
+	return instructionSent.InstructionId, receipt.TxHash, nil
+}
+
 func SendSayGoodbye(s *support.Support, instructionSenderAddress common.Address, name string, reason string) (common.Hash, common.Hash, error) {
 	sender, err := helloworld.NewHelloWorldInstructionSender(instructionSenderAddress, s.ChainClient)
 	if err != nil {

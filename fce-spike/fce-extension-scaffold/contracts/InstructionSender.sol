@@ -31,6 +31,14 @@ contract HelloWorldInstructionSender {
     // forge-lint: disable-next-line(unsafe-typecast)
     bytes32 public constant OP_COMMAND_CHECK_GREATER_THAN_10 = bytes32("CHECK_GREATER_THAN_10");
 
+    /// @notice Operation type for the dispute-arbitration action (RULE_ON_EVIDENCE).
+    // forge-lint: disable-next-line(unsafe-typecast)
+    bytes32 public constant OP_TYPE_DISPUTE = bytes32("DISPUTE");
+
+    /// @notice Command for the RULE_ON_EVIDENCE action.
+    // forge-lint: disable-next-line(unsafe-typecast)
+    bytes32 public constant OP_COMMAND_RULE_ON_EVIDENCE = bytes32("RULE_ON_EVIDENCE");
+
     /// @notice Reference to the TEE extension registry contract.
     ITeeExtensionRegistry public immutable TEE_EXTENSION_REGISTRY;
     /// @notice Reference to the TEE machine registry contract.
@@ -139,6 +147,35 @@ contract HelloWorldInstructionSender {
             opType: OP_TYPE_THRESHOLD,
             opCommand: OP_COMMAND_CHECK_GREATER_THAN_10,
             message: _encryptedValue,
+            cosigners: cosigners,
+            cosignersThreshold: 0,
+            claimBackAddress: msg.sender
+        });
+
+        TEE_EXTENSION_REGISTRY.sendInstructions{value: msg.value}(
+            teeIds,
+            params
+        );
+    }
+
+    /// @notice Sends a RULE_ON_EVIDENCE instruction to the TEE.
+    /// @param _encryptedEvidence A single JSON payload — {escrowId, evidenceA,
+    ///        evidenceB, windowStartUnix, windowEndUnix} — ECIES-encrypted to
+    ///        the TEE's public key by the caller *before* this call, exactly
+    ///        like sendCheckGreaterThan10. Both parties' claimed timestamps
+    ///        travel inside this single ciphertext; only the enclave ever
+    ///        sees them in the clear. The verdict this produces is ABI-encoded
+    ///        (not JSON, unlike the Hello World/threshold responses) so that
+    ///        WardenDisputeResolver can decode it cheaply on-chain after
+    ///        verifying the TEE's signature over it.
+    function sendRuleOnEvidence(bytes calldata _encryptedEvidence) external payable {
+        address[] memory teeIds = TEE_MACHINE_REGISTRY.getRandomTeeIds(_getExtensionId(), 1);
+        address[] memory cosigners = new address[](0);
+
+        ITeeExtensionRegistry.TeeInstructionParams memory params = ITeeExtensionRegistry.TeeInstructionParams({
+            opType: OP_TYPE_DISPUTE,
+            opCommand: OP_COMMAND_RULE_ON_EVIDENCE,
+            message: _encryptedEvidence,
             cosigners: cosigners,
             cosignersThreshold: 0,
             claimBackAddress: msg.sender
