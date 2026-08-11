@@ -1,4 +1,32 @@
-# Warden — Phase 0 Spike: Task 1 (FDC Payment Attestation Round-Trip)
+# Warden
+
+A smart escrow on Flare that locks XRP-derived value (via FAssets/FXRP) and auto-releases on a
+verified real-world condition using Flare's Data Connector (FDC), with a confidential-compute
+(FCE/TEE) fallback arbitrator for disputes. Built and verified end to end on Coston2 testnet.
+
+## Live deployments
+
+| Component | Address / tx | Explorer |
+|---|---|---|
+| `WardenPaymentAttestor` (Task 1) | `0xb93d06F70dD0C75ddF12F2361193C972a0baa3e2` | [contract](https://coston2-explorer.flare.network/address/0xb93d06F70dD0C75ddF12F2361193C972a0baa3e2) |
+| `WardenEscrow` v1 (Phase 1) | `0x178A8f2D53C53194F81153E7Ce018CbB58D54045` | [contract](https://coston2-explorer.flare.network/address/0x178A8f2D53C53194F81153E7Ce018CbB58D54045) |
+| `WardenEscrow` v2 (Phase 2, + release hook) | `0xBDDD1E23604cA932c823Ef3397D96697aBB1c53D` | [contract](https://coston2-explorer.flare.network/address/0xBDDD1E23604cA932c823Ef3397D96697aBB1c53D) |
+| `WardenWeatherResolver` (Phase 2) | `0x0a7b57FC9d907a55f72E7920E6645A6d40B972CF` | [contract](https://coston2-explorer.flare.network/address/0x0a7b57FC9d907a55f72E7920E6645A6d40B972CF) |
+| Phase 2 auto-release tx | `0xb15a31cd33a27bae8e6c5f91758722610651a388666c75313031d956b0ae16ce` | [tx](https://coston2-explorer.flare.network/tx/0xb15a31cd33a27bae8e6c5f91758722610651a388666c75313031d956b0ae16ce) |
+| Phase 2 real XRPL payout | `0B903CE2F06F37947DC052333D1754CF08BC3CDCBB0AB36145CFF7E79C468B92` | [tx](https://testnet.xrpl.org/transactions/0B903CE2F06F37947DC052333D1754CF08BC3CDCBB0AB36145CFF7E79C468B92) |
+| `InstructionSender` (Task 2 / FCE) | `0xc594F0BE29aD3b30388e712683661138CC7c3A3C` | [contract](https://coston2-explorer.flare.network/address/0xc594F0BE29aD3b30388e712683661138CC7c3A3C) |
+| Task 2 live TEE `CHECK_GREATER_THAN_10` tx | `0xd6f41bbaac989d6ffdeb3ddf9ddbe470d915dbafb223403fd4b83293c2fc9e85` | [tx](https://coston2-explorer.flare.network/tx/0xd6f41bbaac989d6ffdeb3ddf9ddbe470d915dbafb223403fd4b83293c2fc9e85) |
+
+## What's built, in order
+
+1. **[Task 1](#task-1-fdc-payment-attestation-round-trip)** — proves the FDC Payment attestation mechanism Warden's release logic depends on.
+2. **[Phase 1](PHASE1.md)** — `WardenEscrow` fund + hold, with a genuinely generic (not vertical-specific) condition struct.
+3. **[Task 2](TASK2.md)** — the FCE/TEE dispute-arbitration fallback, `CHECK_GREATER_THAN_10`, now live on Coston2.
+4. **[Phase 2](PHASE2.md)** — the full happy path: real weather data → FDC `Web2Json` attestation → generic release hook → real XRP paid out on XRPL, zero manual steps.
+
+---
+
+# Task 1: FDC Payment Attestation Round-Trip
 
 Status: **working, verified end to end on 2026-08-02.**
 
@@ -14,8 +42,8 @@ Status: **working, verified end to end on 2026-08-02.**
    payment. The recorded transaction is on Coston2 — a real, independently-checkable
    on-chain confirmation that the XRPL payment happened.
 
-This is the exact mechanism Warden's escrow will use to release funds on a verified
-real-world condition.
+This is the exact mechanism Warden's escrow uses to release funds on a verified real-world
+condition.
 
 ## Live artifacts from the run
 
@@ -72,6 +100,8 @@ Each step also runs standalone (`node scripts/0N-*.mjs`) and persists progress t
 - **ethers v6 gotcha:** a decoded `Result` (from `AbiCoder.decode`) is read-only/frozen and
   can't be passed straight back into a contract call as a nested struct argument — call
   `.toObject(true)` on it first to get a plain object ethers can re-encode.
+
+---
 
 ## Task 2 (FCE) — see [TASK2.md](TASK2.md)
 
