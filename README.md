@@ -72,3 +72,8 @@ Each step also runs standalone (`node scripts/0N-*.mjs`) and persists progress t
 - **ethers v6 gotcha:** a decoded `Result` (from `AbiCoder.decode`) is read-only/frozen and
   can't be passed straight back into a contract call as a nested struct argument — call
   `.toObject(true)` on it first to get a plain object ethers can re-encode.
+
+## Phase 1 (Escrow Core) — see [PHASE1.md](PHASE1.md)
+
+`WardenEscrow` fund + hold, verified on Coston2 via real FAssets Direct Minting. Generic
+condition struct confirmed genuinely vertical-agnostic.
