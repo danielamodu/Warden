@@ -1,0 +1,543 @@
+{
+  "assetManagerAddress": "0xc1Ca88b937d0b528842F95d5731ffB586f4fbDFA",
+  "coreVaultXrplAddress": "rDhpmiPq4BVBDWMVdSrmkgt8thKyRzGV1p",
+  "mintXrplTxHash": "006695FAEEE32DFD8BD663121EB89528F68738C22849EA310E9D04B1E479A6D2",
+  "mintXrplTxHashUpper": "006695FAEEE32DFD8BD663121EB89528F68738C22849EA310E9D04B1E479A6D2",
+  "netMintAmountXrp": 12,
+  "abiEncodedRequest": "0x5852505061796d656e74000000000000000000000000000000000000000000007465737458525000000000000000000000000000000000000000000000000000b6abd43236bc521ef79df8903aa9d82ed997e97cb0bf00f5ecc96ea3902c4f6c006695faeee32dfd8bd663121eb89528f68738c22849ea310e9d04b1e479a6d2000000000000000000000000e761cca6da44511372dcc23d94d7294e2a81579d",
+  "fdcRequestTxHash": "0x0f1aae8c9e29229849e5ccee1abac08686c5b319eb6481266b8b18dfa42d04b3",
+  "votingRoundId": 1422766,
+  "proof": {
+    "response_hex": "0x00000000000000000000000000000000000000000000000000000000000000205852505061796d656e74000000000000000000000000000000000000000000007465737458525000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000015b5ae000000000000000000000000000000000000000000000000000000006a7b8148006695faeee32dfd8bd663121eb89528f68738c22849ea310e9d04b1e479a6d2000000000000000000000000e761cca6da44511372dcc23d94d7294e2a81579d00000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000012e8f4e000000000000000000000000000000000000000000000000000000006a7b814800000000000000000000000000000000000000000000000000000000000001e0deb7b263323094360bedc28afe203f5ac4ea41139eac0bf556d0a56166386694cf68c86c10983c93617102d84e2f94ea63edf51eaab2c158d8168d0a1f10fb38cf68c86c10983c93617102d84e2f94ea63edf51eaab2c158d8168d0a1f10fb380000000000000000000000000000000000000000000000000000000000ba284c0000000000000000000000000000000000000000000000000000000000ba284c0000000000000000000000000000000000000000000000000000000000ba28400000000000000000000000000000000000000000000000000000000000ba2840000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022726e416d774776674e6b6f79373364564438433447465a6a316634475050445933500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020464250526641001800000000e761cca6da44511372dcc23d94d7294e2a81579d",
+    "attestation_type": "0x5852505061796d656e7400000000000000000000000000000000000000000000",
+    "proof": [
+      "0x584cafebe246ac07ee50a95cb334231610595f6a9c0939141c5b9c25c3b7492b",
+      "0x81b305cf2fe7da973874382131ea1c4a1e6baa42d7dc9f8443f9bf606807a23a",
+      "0x0e857eb81c77a1130b094b4e0a16ffccff49fbe8789458498ea98dc654b65d05"
+    ]
+  },
+  "fxrpAddress": "0x0b6A3645c240605887a5532109323A3E12273dc7",
+  "mintTxHash": "already-confirmed-by-relayer",
+  "fxrpBalanceAfterMint": "16000000",
+  "escrowAddress": "0x12FeF54Aa967Cc921D8A42528B7ff23218911e14",
+  "escrowAbi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_fxrp",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_assetManager",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "conditionId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "buyer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "beneficiaryXrplAddress",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "EscrowFunded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "beneficiaryXrplAddress",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "redeemedAmountUBA",
+          "type": "uint256"
+        }
+      ],
+      "name": "EscrowReleased",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "outcome",
+          "type": "bool"
+        }
+      ],
+      "name": "EscrowResolved",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "assetManager",
+      "outputs": [
+        {
+          "internalType": "contract IAssetManager",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "escrows",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "conditionId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "buyer",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "beneficiary",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "beneficiaryXrplAddress",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "enum WardenEscrow.ConditionStatus",
+          "name": "status",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint64",
+          "name": "fundedAt",
+          "type": "uint64"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "conditionId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "beneficiaryXrplAddress",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "fund",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "fxrp",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getEscrow",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "conditionId",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "buyer",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "beneficiary",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "beneficiaryXrplAddress",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "enum WardenEscrow.ConditionStatus",
+              "name": "status",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint64",
+              "name": "fundedAt",
+              "type": "uint64"
+            }
+          ],
+          "internalType": "struct WardenEscrow.Escrow",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "heldBalance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "nextEscrowId",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "outcome",
+          "type": "bool"
+        }
+      ],
+      "name": "resolveAndRelease",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "redeemedAmountUBA",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "resolver",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_resolver",
+          "type": "address"
+        }
+      ],
+      "name": "setResolver",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "resolverAddress": "0x662144FE2c59f58b3612Ee5bf252D06Ff1d2d91A",
+  "resolverAbi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_escrow",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_machineManager",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_expectedExtensionId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "outcome",
+          "type": "bool"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "teeId",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "instructionId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "VerdictSubmitted",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "TEE_ACTION_RESULT_PREFIX",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "consumedInstructionIds",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "escrow",
+      "outputs": [
+        {
+          "internalType": "contract IWardenEscrow",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "expectedExtensionId",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "machineManager",
+      "outputs": [
+        {
+          "internalType": "contract IMachineManager",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "teeId",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "instructionId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "submissionTag",
+          "type": "string"
+        },
+        {
+          "internalType": "uint8",
+          "name": "status",
+          "type": "uint8"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "submitVerdict",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "redeemedAmountUBA",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "approveTxHash": "0x470a3378e2b9c33ae330508c5ee104b39fe585febf5900d8c12c5e5fdc348a9b",
+  "fundTxHash": "0x5efdb353e9f2f961e58f30f17165ac20bf60e372263ccc150d991cb4cfb3343f",
+  "escrowId": "0",
+  "conditionId": "0x992de289328b043cd6d6c3bf30af0df4d75e3f8f65f150761ae2a9c52823cf02",
+  "fundAmountUBA": "10000000",
+  "beneficiaryXrplAddress": "rQhiVPjkhTQE9FXriKJhX9LZL9Jy9b4xnP",
+  "verdictTxHash": "0xe15336e9d5e9b5f75f8fa1bcc0bafa8631ad5262fd7d73df0556b354abc722e1",
+  "outcome": true,
+  "instructionId": "0x29faf1cb88695bcc40a704beb31a2e167371988d7764c5e2e759625c0d4c4fc7",
+  "teeId": "0x33c2f5f41Bf1199A7Dc68F32D74ED097F07e33C0",
+  "payoutXrplTxHash": "D588BAF9C7BDEC8585A4E2E3D89057CF5B32376195667C417A274237577658B0",
+  "payoutAmountXrp": 9.95,
+  "seenPayoutHashes": [
+    "D588BAF9C7BDEC8585A4E2E3D89057CF5B32376195667C417A274237577658B0"
+  ]
+}
