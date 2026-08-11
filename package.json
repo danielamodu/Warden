@@ -1,0 +1,22 @@
+{
+  "name": "warden-fdc-spike",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase 0 spike: FDC Payment attestation round-trip (XRPL testnet -> Flare Coston2)",
+  "scripts": {
+    "01-accounts": "node scripts/01-generate-accounts.mjs",
+    "02-payment": "node scripts/02-send-xrp-payment.mjs",
+    "03-prepare": "node scripts/03-prepare-attestation.mjs",
+    "04-submit": "node scripts/04-submit-attestation.mjs",
+    "05-proof": "node scripts/05-retrieve-proof.mjs",
+    "06-confirm": "node scripts/06-confirm-onchain.mjs",
+    "all": "node scripts/run-all.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4",
+    "solc": "^0.8.28",
+    "xrpl": "^4.1.0"
+  }
+}

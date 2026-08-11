@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.coston2
+state.json
+state.escrow.json
+state.phase2.json
+*.log
+
+# Stray local toolchain dump (Go/Foundry/ngrok/jq binaries), not source
+fce-spike/tools-win/
+
+# Local Claude Code tool state, not project content
+.claude/
