@@ -1,0 +1,42 @@
+@keyframes spinSlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes loaderPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+.spinSlow { animation: spinSlow 3s linear infinite; }
+.loaderPulse { animation: loaderPulse 2s ease-in-out infinite; }
+
+.cardEditorial { transition: all 700ms var(--editorial-ease); }
+.cardEditorial:hover {
+  background-color: rgba(255, 255, 255, 0.98);
+  border-color: var(--accent-color);
+}
+
+.timelineLine {
+  height: 1px;
+  background-color: var(--border-color);
+  position: relative;
+  flex-grow: 1;
+}
+.timelineLineFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background-color: var(--accent-color);
+  transition: width 1s var(--editorial-ease);
+}
+
+.phaseContent {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 600ms var(--editorial-ease);
+}
+.phaseContentActive {
+  max-height: 500px;
+}
+
+.copyBtn:active { transform: scale(0.9); }
