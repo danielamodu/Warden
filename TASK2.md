@@ -18,6 +18,8 @@ The full chain the original spike asked for, live:
 - `CHECK_GREATER_THAN_10` instruction: tx `0xd6f41bbaac989d6ffdeb3ddf9ddbe470d915dbafb223403fd4b83293c2fc9e85`, instructionId `0x707f27c6d1268b95215e3ce4755b9df762c3e5376d1062666f8539fbb7e550b4` — https://coston2-explorer.flare.network/tx/0xd6f41bbaac989d6ffdeb3ddf9ddbe470d915dbafb223403fd4b83293c2fc9e85 — calldata contains only the ciphertext, never `42`.
 - Extension proxy tunnel (ephemeral quick tunnel, will rotate on restart — not meant to be durable): `https://knitting-idaho-harmony-follows.trycloudflare.com`
 
+> **Infra update (2026-08-13):** the identifiers above are historical — accurate for this specific test run, but the teeId, InstructionSender, and tunnel have all since moved. The TEE now runs on a dedicated AWS instance behind a stable HTTPS endpoint instead of a local Docker stack + rotating quick tunnel. Current live values are in [PHASE3.md](PHASE3.md)'s infra-update note; this file is left as a historical record of Task 2's original completion.
+
 ## What it took to get here (see full narrative below for the earlier walls)
 
 Beyond the Docker Desktop saga and the indexer DB credentials (both resolved — see "Docker Desktop root-caused and fixed" and the indexer DB section below), two more genuine bugs surfaced only once the stack was actually healthy enough to reach them:

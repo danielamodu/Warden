@@ -88,6 +88,25 @@ never either party's claim.
 - `submitVerdict()` on-chain — resolver reconstructs the TEE's signing hash and `ecrecover`s it against the registered public key, live, for the first time: tx `0xe15336e9d5e9b5f75f8fa1bcc0bafa8631ad5262fd7d73df0556b354abc722e1` — https://coston2-explorer.flare.network/tx/0xe15336e9d5e9b5f75f8fa1bcc0bafa8631ad5262fd7d73df0556b354abc722e1 — `VerdictSubmitted{escrowId: 0, outcome: true}`
 - Real XRPL payout: tx `D588BAF9C7BDEC8585A4E2E3D89057CF5B32376195667C417A274237577658B0`, 9.95 XRP to `rQhiVPjkhTQE9FXriKJhX9LZL9Jy9b4xnP` — https://testnet.xrpl.org/transactions/D588BAF9C7BDEC8585A4E2E3D89057CF5B32376195667C417A274237577658B0
 
+## Infra update (2026-08-13): TEE migrated off the local machine to AWS
+
+The TEE stack (`extension-tee` + `ext-proxy` + `redis`) no longer runs on a local
+Docker Desktop instance behind a rotating `trycloudflare.com` quick tunnel — both
+real recurring failure points this session (a dead tunnel that needed manual
+restart + re-registration, twice). It now runs on a dedicated AWS EC2 instance
+(`t3.small`, resized up from `t3.micro` for headroom) behind a permanent Elastic
+IP with automatic HTTPS via Caddy + Let's Encrypt — no Cloudflare account or
+custom domain needed, using [sslip.io](https://sslip.io)'s free wildcard DNS
+(`<ip>.sslip.io` resolves to that literal IP) as the hostname Let's Encrypt
+validates against.
+
+- **New live `teeId`**: `0xCCbc7fef9A0710ED0FB1238acD3D505aF964E09b` — PRODUCTION status
+- **Stable endpoint**: `https://100-63-86-147.sslip.io`
+- **Old local `teeId`** (`0x33c2f5f41Bf1199A7Dc68F32D74ED097F07e33C0`, used for the dispute round trip documented above) has been **paused on-chain** — tx `0x7aaaf444107c1248b223260bef0fc49d364f1a692f544861ccc19da48ae3ef30` — and is no longer eligible for instruction routing.
+- **Parity confirmed**: re-ran the same evidence-submission flow against the AWS-hosted TEE post-migration — real encrypted instruction tx `0xe1e99fa923365a83093cb821e5d1d4749d41e57af4efbaba4c870fc64c114aba`, real signed verdict (`outcome=true, rulingNumber=1`), identical behavior to the original run above. Not resubmitted on-chain since `escrowId=0` was already resolved by the original run — the point was proving the TEE round trip itself, which it did.
+
+Docker no longer needs to run locally at all for the dispute path to work.
+
 ## What it took / gotchas
 
 - **Leftover FXRP from Phase 1/2 (4.0) was below one redemption lot (10.0)** —
