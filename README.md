@@ -97,6 +97,39 @@ falls inside an independently-established window. The **mechanism** is what is p
 evidence, attested enclave, on-chain signature verification. The rules engine is deliberately the
 simplest thing that exercises it end to end.
 
+## Try it yourself
+
+**No wallet, no funds, nothing installed** — everything below is live and read-only:
+
+| | |
+|---|---|
+| [The settled escrow](https://trywarden.vercel.app/) | Live Dubai temperature against the threshold read from `WardenWeatherResolver` on-chain, and the XRPL payout it triggered |
+| [Transparency portal](https://trywarden.vercel.app/proof) | The FDC voting round, the Web2Json verifier, the live enclave, and every contract address |
+| [Vaults](https://trywarden.vercel.app/dashboard) | Escrow state read straight from Coston2 |
+| `forge test` | 39 tests, offline, no testnet funds — including the forged-signature and replay cases |
+
+**With a wallet holding FXRP**, the entire confidential dispute path is self-serve in the
+browser — fund a real escrow, submit ECIES-encrypted evidence, get a signed ruling from the live
+enclave, and watch `submitVerdict` verify it on-chain. `fund()` is permissionless; nothing about
+that flow is gated to us.
+
+**Getting testnet FXRP** is the one step that needs a terminal, because FAssets minting is an
+XRPL round trip:
+
+```bash
+npm install
+node scripts/01-generate-accounts.mjs        # fresh XRPL + Coston2 dev wallets, XRPL funded via faucet
+# fund the printed Coston2 address at https://faucet.flare.network/ (Request C2FLR), then:
+node scripts/phase3/01-mint-fxrp.mjs         # XRP -> FDC attestation -> executeDirectMinting -> FXRP
+node scripts/phase3/check-balance.mjs        # want "lots available: 1" or more
+```
+
+One redemption lot is 10 FXRP — below that, release reverts with `amount below one lot`.
+
+The **weather path** (`setCondition` + an FDC `Web2Json` attestation round) is driven from
+[`scripts/phase2/`](scripts/phase2/) rather than the UI; the transparency portal shows the proof
+artefacts from the live run.
+
 ## Contracts on Coston2
 
 Every Warden contract below is **source-verified on the Coston2 explorer** — read the code, call
