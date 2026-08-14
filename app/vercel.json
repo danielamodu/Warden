@@ -2,7 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "comment": "Neither the XRPL testnet JSON-RPC endpoint nor the TEE extension proxy sends CORS headers, so a browser fetch straight to either is blocked. Vite's dev server proxies these paths locally; these rewrites do the same job in production so the deployed app can read XRPL and talk to the enclave. Both must come before the SPA catch-all.",
       "source": "/xrpl-rpc/:path*",
       "destination": "https://s.altnet.rippletest.net:51234/:path*"
     },
@@ -11,7 +10,6 @@
       "destination": "https://100-63-86-147.sslip.io/:path*"
     },
     {
-      "comment": "Client-side routing: every other path is served index.html so react-router can resolve it.",
       "source": "/(.*)",
       "destination": "/index.html"
     }
