@@ -54,6 +54,8 @@ export interface Escrow {
   onChainEscrowId: string;
   amount: number;
   amountAsset: string;
+  /** EVM address that funded this escrow, read from the contract's own record. */
+  buyer: string;
   status: EscrowStatus;
   conditionSummary: string;
   condition: EscrowCondition;

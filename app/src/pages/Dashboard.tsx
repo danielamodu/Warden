@@ -5,6 +5,7 @@ import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 import BackgroundGrid from '../components/BackgroundGrid';
 import { useEscrowList } from '../hooks/useEscrowData';
+import { useWallet } from '../hooks/useWallet';
 import type { Escrow, EscrowStatus } from '../types';
 import { truncateMiddle } from '../utils/format';
 
@@ -87,8 +88,20 @@ function VaultCard({ escrow }: { escrow: Escrow }) {
 }
 
 export default function Dashboard() {
-  const { escrows, loading } = useEscrowList();
+  const { escrows: allEscrows, loading } = useEscrowList();
+  const { address } = useWallet();
   const [filter, setFilter] = useState<Filter>('all');
+
+  // These are the connected wallet's own vaults, so scope them to the buyer the
+  // escrow contract itself recorded — reading `buyer` off each escrow rather
+  // than scanning EscrowFunded logs, which Coston2's public RPC caps at a
+  // 30-block range. With no wallet connected there is no "mine" to show, so the
+  // list stays empty and the empty state invites connecting.
+  const escrows = useMemo(
+    () => (address ? allEscrows.filter((e) => e.buyer.toLowerCase() === address.toLowerCase()) : []),
+    [allEscrows, address]
+  );
+
   const filtered = useMemo(() => (filter === 'all' ? escrows : escrows.filter((e) => e.status === filter)), [filter, escrows]);
 
   const totalLocked = escrows.reduce((sum, e) => sum + (e.status !== 'released' ? e.amount : 0), 0);
@@ -168,9 +181,15 @@ export default function Dashboard() {
 
           {!loading && filtered.length === 0 && (
             <div className="mt-10 rounded-2xl border border-dashed border-white/15 bg-white/[.02] py-24 text-center">
-              <h2 className="display text-2xl text-white">No escrows yet</h2>
+              <h2 className="display text-2xl text-white">
+                {!address ? 'Connect a wallet' : 'No escrows yet'}
+              </h2>
               <p className="mt-3 text-sm text-zinc-500">
-                {filter === 'all' ? 'Create your first escrow to get started with Warden.' : `No escrows currently in "${filter}" status.`}
+                {!address
+                  ? 'Your vaults are read from the escrow contract by the address that funded them. Connect a wallet to see yours.'
+                  : filter === 'all'
+                    ? 'Create your first escrow to get started with Warden.'
+                    : `No escrows currently in "${filter}" status.`}
               </p>
               <Link to="/create" className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#b4f56b] px-5 py-3 text-sm font-semibold text-[#0b0d10]">
                 Create escrow <ArrowRight size={15} />

@@ -53,6 +53,7 @@ async function buildPhase2Escrow(): Promise<Escrow> {
     onChainEscrowId: '0',
     amount,
     amountAsset: 'FXRP',
+    buyer: raw.buyer,
     status,
     conditionSummary: thresholdC != null ? `Weather: ${PHASE2.location}, Threshold >${thresholdC}°C` : 'Weather condition',
     condition: {
@@ -119,6 +120,7 @@ async function buildPhase3Escrow(routeId: string, onChainEscrowId: number): Prom
     onChainEscrowId: String(onChainEscrowId),
     amount,
     amountAsset: 'FXRP',
+    buyer: raw.buyer,
     status,
     conditionSummary: 'Dispute: TEE-arbitrated evidence ruling (RULE_ON_EVIDENCE)',
     condition: {

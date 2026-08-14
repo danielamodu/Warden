@@ -1,4 +1,4 @@
-import type { IEscrowService } from './IEscrowService';
+﻿import type { IEscrowService } from './IEscrowService';
 import type { DisputeRecord, Escrow, EvidenceSubmission, ContractInfo } from '../types';
 import { contracts as realContracts } from './realData';
 
@@ -11,8 +11,9 @@ const mockEscrows: Escrow[] = [
     onChainEscrowId: '1',
     amount: 10,
     amountAsset: 'XRP',
+    buyer: '0x0000000000000000000000000000000000000001',
     status: 'pending',
-    conditionSummary: 'Weather: Dubai, Threshold >29.9°C',
+    conditionSummary: 'Weather: Dubai, Threshold >29.9Â°C',
     condition: { type: 'weather', location: 'Dubai', thresholdC: 29.9, currentC: 27.1, triggerIfAbove: true },
     beneficiaryXrplAddress: 'rN7n7otQDd6FczFgLdlqtyMVrfNrVXXXXX',
     fundedAgo: '2 hours ago',
@@ -24,6 +25,7 @@ const mockEscrows: Escrow[] = [
     onChainEscrowId: '2',
     amount: 25.5,
     amountAsset: 'FXRP',
+    buyer: '0x0000000000000000000000000000000000000001',
     status: 'released',
     conditionSummary: 'Delivery Confirmation, Signed',
     condition: { type: 'delivery', summary: 'Delivery Confirmation, Signed' },
@@ -37,6 +39,7 @@ const mockEscrows: Escrow[] = [
     onChainEscrowId: '3',
     amount: 100,
     amountAsset: 'XRP',
+    buyer: '0x0000000000000000000000000000000000000001',
     status: 'pending',
     conditionSummary: 'API Oracle: BTC/USD above $45k',
     condition: { type: 'oracle', summary: 'API Oracle: BTC/USD above $45k' },
@@ -50,6 +53,7 @@ const mockEscrows: Escrow[] = [
     onChainEscrowId: '4',
     amount: 50,
     amountAsset: 'FXRP',
+    buyer: '0x0000000000000000000000000000000000000001',
     status: 'disputed',
     conditionSummary: 'IP Licensing: Royalty Split 60/40',
     condition: { type: 'dispute', summary: 'IP Licensing: Royalty Split 60/40' },
@@ -64,6 +68,7 @@ const mockEscrows: Escrow[] = [
     onChainEscrowId: '5',
     amount: 15,
     amountAsset: 'XRP',
+    buyer: '0x0000000000000000000000000000000000000001',
     status: 'released',
     conditionSummary: 'Port of Entry Timestamp, Shanghai',
     condition: { type: 'delivery', summary: 'Port of Entry Timestamp, Shanghai' },
@@ -77,6 +82,7 @@ const mockEscrows: Escrow[] = [
     onChainEscrowId: '6',
     amount: 200,
     amountAsset: 'XRP',
+    buyer: '0x0000000000000000000000000000000000000001',
     status: 'pending',
     conditionSummary: 'Weather: Phoenix, Rainfall <0.5in/day',
     condition: { type: 'weather', location: 'Phoenix', thresholdC: 0.5, triggerIfAbove: false },

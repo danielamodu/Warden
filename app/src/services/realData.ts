@@ -1,8 +1,8 @@
-// Real, confirmed on-chain artifacts from Warden's Phase 2 (happy path) and
+﻿// Real, confirmed on-chain artifacts from Warden's Phase 2 (happy path) and
 // Phase 3 (dispute path) runs on Coston2 + XRPL testnet.
 //
 // Sourced from: Warden/PHASE2.md, Warden/PHASE3.md, Warden/state.phase2.json,
-// Warden/state.phase3.json. Nothing here is invented — every address, tx hash,
+// Warden/state.phase3.json. Nothing here is invented â€” every address, tx hash,
 // round number and amount below is copied verbatim from those real run records.
 //
 // This module is the single source of truth the RealEscrowService reads from.
@@ -18,7 +18,7 @@ export const EXPLORER = {
 };
 
 // ---------------------------------------------------------------------------
-// Phase 2 — happy path (weather-triggered auto-release)
+// Phase 2 â€” happy path (weather-triggered auto-release)
 // ---------------------------------------------------------------------------
 export const phase2 = {
   escrowAddress: '0xBDDD1E23604cA932c823Ef3397D96697aBB1c53D',
@@ -50,7 +50,7 @@ export const phase2 = {
 };
 
 // ---------------------------------------------------------------------------
-// Phase 3 — dispute path (live TEE ruling + on-chain signature verification)
+// Phase 3 â€” dispute path (live TEE ruling + on-chain signature verification)
 // ---------------------------------------------------------------------------
 export const phase3 = {
   escrowAddress: '0x12FeF54Aa967Cc921D8A42528B7ff23218911e14',
@@ -72,7 +72,7 @@ export const phase3 = {
   outcome: true,
   rulingNumber: 1,
   reasoning:
-    'The TEE ran its deterministic rules engine over both parties’ ECIES-encrypted claimed timestamps: evidence A fell inside the independently-established comparison window, evidence B fell roughly two hours outside it. Evidence A was ruled the valid claim, and WardenDisputeResolver.submitVerdict() reconstructed the TEE’s signing hash and ecrecover’d it on-chain against the TEE’s registered public key before releasing funds.',
+    'The TEE ran its deterministic rules engine over both partiesâ€™ ECIES-encrypted claimed timestamps: evidence A fell inside the independently-established comparison window, evidence B fell roughly two hours outside it. Evidence A was ruled the valid claim, and WardenDisputeResolver.submitVerdict() reconstructed the TEEâ€™s signing hash and ecrecoverâ€™d it on-chain against the TEEâ€™s registered public key before releasing funds.',
   payoutXrplTxHash: 'D588BAF9C7BDEC8585A4E2E3D89057CF5B32376195667C417A274237577658B0',
   payoutAmountXrp: 9.95,
   balanceBeforeXrp: 105.0,
@@ -88,8 +88,9 @@ export const phase2Escrow: Escrow = {
   onChainEscrowId: phase2.onChainEscrowId,
   amount: phase2.fundAmountFxrp,
   amountAsset: 'FXRP',
+    buyer: '0xE761cca6da44511372DCC23d94d7294e2A81579D',
   status: 'released',
-  conditionSummary: `Weather: ${phase2.location}, Threshold >${phase2.thresholdTempC}°C`,
+  conditionSummary: `Weather: ${phase2.location}, Threshold >${phase2.thresholdTempC}Â°C`,
   condition: {
     type: 'weather',
     location: phase2.location,
@@ -112,7 +113,7 @@ export const phase2Escrow: Escrow = {
   fdc: {
     votingRoundId: phase2.votingRoundId,
     attestationType: 'Web2Json',
-    attestedValueLabel: `${(phase2.attestedTemperatureCx100 / 100).toFixed(2)}°C (attested cx100=${phase2.attestedTemperatureCx100})`,
+    attestedValueLabel: `${(phase2.attestedTemperatureCx100 / 100).toFixed(2)}Â°C (attested cx100=${phase2.attestedTemperatureCx100})`,
     verified: true,
   },
   payout: {
@@ -129,6 +130,7 @@ export const phase3Escrow: Escrow = {
   onChainEscrowId: phase3.onChainEscrowId,
   amount: phase3.fundAmountFxrp,
   amountAsset: 'FXRP',
+    buyer: '0xE761cca6da44511372DCC23d94d7294e2A81579D',
   status: 'released',
   conditionSummary: 'Dispute: TEE-arbitrated evidence ruling (RULE_ON_EVIDENCE)',
   condition: {
@@ -187,7 +189,7 @@ export const contracts: ContractInfo[] = [
     explorerUrl: EXPLORER.coston2Address(phase2.fdcVerificationAddress),
   },
   {
-    label: 'WardenEscrow — Phase 2 (Weather)',
+    label: 'WardenEscrow â€” Phase 2 (Weather)',
     description: 'Core escrow vault used for the weather-triggered happy path.',
     address: phase2.escrowAddress,
     explorerUrl: EXPLORER.coston2Address(phase2.escrowAddress),
@@ -199,14 +201,14 @@ export const contracts: ContractInfo[] = [
     explorerUrl: EXPLORER.coston2Address(phase2.resolverAddress),
   },
   {
-    label: 'WardenEscrow — Phase 3 (Dispute)',
+    label: 'WardenEscrow â€” Phase 3 (Dispute)',
     description: 'Core escrow vault used for the TEE-arbitrated dispute path.',
     address: phase3.escrowAddress,
     explorerUrl: EXPLORER.coston2Address(phase3.escrowAddress),
   },
   {
     label: 'WardenDisputeResolver',
-    description: 'Reconstructs the TEE’s signing hash and ecrecover-verifies verdicts on-chain before releasing funds.',
+    description: 'Reconstructs the TEEâ€™s signing hash and ecrecover-verifies verdicts on-chain before releasing funds.',
     address: phase3.resolverAddress,
     explorerUrl: EXPLORER.coston2Address(phase3.resolverAddress),
   },
