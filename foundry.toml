@@ -10,5 +10,29 @@ solc = "0.8.28"
 # deep"). The deploy scripts compile it the same way — see PHASE3.md.
 via_ir = true
 
+# --- Explorer verification profiles -----------------------------------
+# The deploy scripts compiled each phase with different solc settings, so
+# verifying the already-deployed bytecode needs those exact settings back.
+# Both phases used the solc pinned in package.json, which resolves to 0.8.36.
+#
+#   FOUNDRY_PROFILE=verify-phase2 forge verify-contract <addr> <contract> ...
+#
+# Phase 2 (scripts/phase2/02-deploy-contracts.mjs) passed no optimizer or
+# viaIR settings at all — plain solc defaults.
+[profile.verify-phase2]
+src = "contracts"
+solc = "0.8.36"
+optimizer = false
+via_ir = false
+
+# Phase 3 (scripts/phase3/02-deploy-contracts.mjs) needed viaIR to get
+# WardenDisputeResolver past "Stack too deep", with the optimizer at 200.
+[profile.verify-phase3]
+src = "contracts"
+solc = "0.8.36"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+
 [fmt]
 line_length = 120

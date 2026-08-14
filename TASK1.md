@@ -1,0 +1,78 @@
+# Task 1: FDC Payment Attestation Round-Trip
+
+Status: **working, verified end to end on 2026-08-02.**
+
+The first thing Warden needed to prove: that Flare's Data Connector can attest a real XRPL
+payment, and that a contract on Coston2 can verify that attestation itself. Everything in
+Phase 2's release path is built on this mechanism.
+
+## What this proves
+
+1. Sent a real payment on XRPL testnet.
+2. Flare's FDC verifier validated it and produced an `abiEncodedRequest`.
+3. Submitted that request on-chain to `FdcHub` on Coston2, paying the FDC fee.
+4. Waited for the FDC voting round to finalize (Flare's attestation-provider consensus).
+5. Retrieved the Merkle proof + signed response from Flare's Data Availability Layer.
+6. Deployed a minimal contract (`WardenPaymentAttestor`) that calls Flare's on-chain
+   `FdcVerification.verifyPayment(proof)` and, only if that returns `true`, records the
+   payment. The recorded transaction is on Coston2 — a real, independently-checkable
+   on-chain confirmation that the XRPL payment happened.
+
+This is the exact mechanism Warden's escrow uses to release funds on a verified real-world
+condition.
+
+## Live artifacts from the run
+
+- XRPL payment: `48BB79412FB51C06391FBB670E13D83DC00EA5E9315CE741BA821C59FE18C15A`
+  https://testnet.xrpl.org/transactions/48BB79412FB51C06391FBB670E13D83DC00EA5E9315CE741BA821C59FE18C15A
+- FDC attestation request tx (Coston2):
+  https://coston2-explorer.flare.network/tx/0x99d7cc82fb8c7e67450392e648013199faacbb591d2977fef45f7877e38eac1b
+- Voting round: `1413757` — finalized.
+- `WardenPaymentAttestor` contract: https://coston2-explorer.flare.network/address/0xb93d06F70dD0C75ddF12F2361193C972a0baa3e2
+- On-chain confirmation tx:
+  https://coston2-explorer.flare.network/tx/0x6f222167b851f65f0aa9a15997a8d6f9d77380eae7ae869b7356d465fd79c888
+  (calls `confirmPayment`, which calls `FdcVerification.verifyPayment`, which returned `true`)
+
+## How to reproduce
+
+```bash
+npm install
+node scripts/01-generate-accounts.mjs   # generates fresh XRPL + Coston2 dev wallets, funds XRPL via faucet
+# fund the printed Coston2 address at https://faucet.flare.network/ (Request C2FLR), then:
+node scripts/run-all.mjs                # sends payment -> attests -> waits -> proves -> confirms on-chain
+```
+
+Each step also runs standalone (`node scripts/0N-*.mjs`) and persists progress to
+`state.json`, so you can re-run a failed step without redoing earlier ones.
+
+## What it took / gotchas worth knowing before Phase 1
+
+- **XRPL testnet is fully self-serve.** `POST https://faucet.altnet.rippletest.net/accounts`
+  (wrapped by `xrpl.js`'s `client.fundWallet()`) needs no captcha/login — good for CI.
+- **Coston2 faucet is UI-only**, no documented public API — just an address field + button
+  at faucet.flare.network, no captcha encountered. Fine for a spike, but Phase 1 automation
+  (CI, demo resets) will need either a funded persistent dev wallet or to ask Flare for
+  faucet API access.
+- **Flare's docs are split across three places** (dev.flare.network prose, a Foundry guide,
+  and a Hardhat/TypeScript guide) and the AI-rendered doc pages sometimes summarize/garble
+  contract addresses. The **raw markdown in `github.com/flare-foundation/developer-hub`** and
+  the **raw Solidity in `github.com/flare-foundation/flare-solidity-periphery-package-mirror`**
+  are the actual source of truth — worth bookmarking those two repos directly rather than
+  trusting the rendered site for anything address- or ABI-sensitive.
+- **Don't hardcode contract addresses.** `IFlareContractRegistry` at
+  `0xaD67FE66660Fb8dFE9d6b1b4240d8650e30F6019` (same address on every Flare network) resolves
+  `FdcHub`, `FdcRequestFeeConfigurations`, `FdcVerification`, `Relay` by name — this is what
+  the script uses, and it's what Flare's own examples use too.
+- **The `Payment` attestation type is generic across BTC/DOGE/XRP** — same
+  `attestationType`/struct, only `sourceId` changes (`testXRP` here). No XRP-specific struct
+  needed despite some XRP-specific verification interfaces existing in the periphery package.
+- **Timing:** attestation request fee was negligible (~10⁻¹⁵ C2FLR). Round finalization + DA
+  Layer proof availability took a few minutes total, well within Flare's documented
+  90–180 second voting-round window plus proof-generation lag.
+- **The `/api/v1/fdc/proof-by-request-round-raw` DA Layer endpoint** (vs. the non-`-raw`
+  one) is the one to use from code — it returns the response pre-ABI-encoded
+  (`response_hex`), so you can `AbiCoder.decode` it directly instead of reconstructing a
+  nested JSON struct by hand.
+- **ethers v6 gotcha:** a decoded `Result` (from `AbiCoder.decode`) is read-only/frozen and
+  can't be passed straight back into a contract call as a nested struct argument — call
+  `.toObject(true)` on it first to get a plain object ethers can re-encode.
