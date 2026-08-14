@@ -1,8 +1,107 @@
 # Warden
 
-A smart escrow on Flare that locks XRP-derived value (via FAssets/FXRP) and auto-releases on a
-verified real-world condition using Flare's Data Connector (FDC), with a confidential-compute
-(FCE/TEE) fallback arbitrator for disputes. Built and verified end to end on Coston2 testnet.
+**Escrow for XRP that settles itself — and arbitrates disputes without either side
+publishing their evidence.**
+
+🔗 **Live app: [trywarden.vercel.app](https://trywarden.vercel.app/)** · Coston2 testnet + XRPL testnet
+
+Submitted to **both** Flare Summer Signal bounties:
+**Bounty 1 — Interoperable Asset Products** (FAssets/FXRP escrow, real XRPL settlement) and
+**Bounty 2 — Confidential Compute Apps** (FCE/TEE dispute arbitration).
+
+## The problem
+
+On-chain escrow can already release funds when a public fact is verifiable. What it cannot do
+is settle an argument. Every on-chain arbitration system in production — Kleros, Aragon Court,
+any multisig-arbiter escrow — requires you to **publish your evidence** so jurors can read it.
+
+That is exactly why serious commercial disputes never go on-chain. The evidence *is* the
+confidential part: rates, counterparty identity, delivery terms, contract addenda. Publishing
+it to win an argument costs more than the argument is worth.
+
+## What Warden does differently
+
+Warden is an escrow where **the evidence is never disclosed to anyone** — not to the
+counterparty, not to a juror pool, not on-chain — and the contract *still* proves the verdict
+is authentic.
+
+Both parties encrypt their evidence client-side (ECIES, secp256k1) to a Flare Confidential
+Compute enclave's public key. Only ciphertext ever enters calldata. The enclave runs a
+deterministic rules engine and signs its ruling. Then
+[`WardenDisputeResolver`](contracts/WardenDisputeResolver.sol) reconstructs the enclave's own
+internal signing scheme on-chain and `ecrecover`s the verdict against the TEE's
+**on-chain-registered public key** — so the contract itself proves the ruling came from the
+real, attested enclave, not from whoever relayed it.
+
+Anyone may submit a verdict. Only signatures that recover to the registered TEE are ever acted
+on. That check is the entire access control, and [it is unit-tested from both
+sides](test/WardenDisputeResolver.t.sol).
+
+> **Why this is not the usual shortcut:** TEE action results have no built-in on-chain verifier
+> anywhere in Flare's `fce-extension-scaffold` — even its own reference test tool just trusts
+> the HTTP response from the extension proxy. Warden traces the signing scheme through
+> `tee-node`'s source and rebuilds it in Solidity instead. Full derivation in [PHASE3.md](PHASE3.md).
+
+## Who it is for
+
+Cross-border commercial counterparties who want XRP-denominated escrow with a dispute path they
+cannot take to a public arbitrator. Freelance and contract work first — smallest contracts,
+shortest sales cycle, and the parties already hold XRP.
+
+## Status: what is actually live
+
+| | State |
+|---|---|
+| Escrow fund + hold, FXRP via FAssets Direct Minting | ✅ live on Coston2 |
+| Automatic release on a verified real-world fact (weather, via FDC `Web2Json`) | ✅ live, real XRPL payout |
+| Confidential dispute arbitration in a TEE, verified on-chain | ✅ live, real XRPL payout |
+| Web app | ✅ [trywarden.vercel.app](https://trywarden.vercel.app/) |
+| Contract test suite | ✅ 39 tests, `forge test` |
+| Other resolver types (logistics, trade finance, IP licensing) | ⛔ not built — roadmap |
+| Partial / split verdicts | ⛔ not built — roadmap |
+| Mainnet or Songbird | ⛔ Coston2 testnet only |
+
+The dispute rules engine today is one deterministic comparison (which of two claimed timestamps
+falls inside an independently-established window). The **mechanism** — encrypted evidence,
+attested enclave, on-chain signature verification — is what is proven; the rules engine is
+deliberately the simplest thing that exercises it end to end.
+
+## Tests
+
+```bash
+forge test
+```
+
+39 tests across [`WardenEscrow`](test/WardenEscrow.t.sol) (custody, resolver access control,
+one-shot resolution, lot-size rounding, value-conservation fuzz) and
+[`WardenDisputeResolver`](test/WardenDisputeResolver.t.sol) (forged signatures, tampered
+verdicts, retargeted escrow ids, replay, foreign-extension TEEs, and a fuzz run proving no key
+other than the registered enclave's can move funds).
+
+Requires `git submodule update --init --recursive` for `forge-std`.
+
+## Roadmap
+
+1. **Now — live on Coston2.** XRP bridging, FDC-verified release, confidential dispute rulings.
+2. **Partial split verdicts.** Graduated payouts for disputes that are not all-or-nothing.
+3. **More resolver types.** Logistics, freight and digital-commerce milestones on the same
+   generic `resolveAndRelease` hook — no escrow contract changes needed.
+4. **Institutional workflows.** Trade-finance approvals and notarised documents.
+5. **Multi-chain settlement.** Additional FAssets-supported underlying chains.
+
+## Architecture
+
+`WardenEscrow` custodies FXRP and knows nothing about *why* funds release. It exposes exactly
+one generic hook, `resolveAndRelease(escrowId, outcome)`, callable only by a designated
+resolver contract. All vertical-specific logic lives in swappable resolvers:
+
+- [`WardenWeatherResolver`](contracts/WardenWeatherResolver.sol) verifies an FDC `Web2Json`
+  Merkle proof on-chain, then calls the hook.
+- [`WardenDisputeResolver`](contracts/WardenDisputeResolver.sol) verifies a TEE signature
+  on-chain, then calls the same hook.
+
+Adding the entire dispute path in Phase 3 required **zero changes to `WardenEscrow.sol`** —
+the clearest evidence the generic condition design holds.
 
 ## Live deployments
 
@@ -19,10 +118,31 @@ verified real-world condition using Flare's Data Connector (FDC), with a confide
 
 ## What's built, in order
 
+Every line of this was written during the hackathon — the repo starts at an empty scaffold
+(commit `238685a`) and each stage below has its own writeup with live tx hashes and the
+gotchas hit along the way.
+
 1. **[Task 1](#task-1-fdc-payment-attestation-round-trip)** — proves the FDC Payment attestation mechanism Warden's release logic depends on.
 2. **[Phase 1](PHASE1.md)** — `WardenEscrow` fund + hold, with a genuinely generic (not vertical-specific) condition struct.
-3. **[Task 2](TASK2.md)** — the FCE/TEE dispute-arbitration fallback, `CHECK_GREATER_THAN_10`, now live on Coston2.
+3. **[Task 2](TASK2.md)** — the FCE/TEE dispute-arbitration fallback, `CHECK_GREATER_THAN_10`, live on Coston2.
 4. **[Phase 2](PHASE2.md)** — the full happy path: real weather data → FDC `Web2Json` attestation → generic release hook → real XRP paid out on XRPL, zero manual steps.
+5. **[Phase 3](PHASE3.md)** — the dispute path: two parties' encrypted evidence → live TEE ruling → **on-chain `ecrecover` against the TEE's registered key** → real XRP paid out. `WardenEscrow.sol` needed zero changes.
+6. **[Web app](app/)** — React + Vite frontend wired to live Coston2 and XRPL, deployed at [trywarden.vercel.app](https://trywarden.vercel.app/).
+
+## Running it locally
+
+```bash
+# Contracts
+forge test                      # 39 tests, no network needed
+
+# Web app
+cd app && npm install && npm run dev
+```
+
+The app reads live Coston2 and XRPL state through public endpoints — no keys needed to browse.
+Creating an escrow needs a Coston2 wallet with C2FLR and FXRP. Reproducing the full pipeline
+from scratch (minting, attestation, TEE ruling, payout) is documented step by step in each
+phase doc below.
 
 ---
 
