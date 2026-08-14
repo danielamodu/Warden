@@ -65,13 +65,17 @@ export const PHASE3 = {
     'The TEE ran its deterministic rules engine over both parties’ ECIES-encrypted claimed timestamps: evidence A fell inside the independently-established comparison window, evidence B fell roughly two hours outside it. Evidence A was ruled the valid claim, and WardenDisputeResolver.submitVerdict() reconstructed the TEE’s signing hash and ecrecover’d it on-chain against the TEE’s registered public key before releasing funds.',
 };
 
-// The extension proxy tunnel is an ephemeral cloudflared URL that can change
-// or die between sessions — overridable via env so it doesn't require a code
-// change if it's rotated, but this exact value is what the task specified as
-// currently live.
+// The TEE was migrated off a local Docker + cloudflared tunnel setup onto an
+// AWS-hosted deployment (see git history: "Migrate TEE off local Docker to
+// AWS, pause old teeId, update docs"), but this fallback URL was never
+// updated to match — it was still pointing at the old cloudflared tunnel,
+// which no longer resolves at all (confirmed live: DNS lookup failure).
+// Live-verified replacement: https://100-63-86-147.sslip.io/info responds
+// 200 with a real TEE info payload (chainId 114, initialOwner matching the
+// project's deployer address) — that's the current AWS endpoint. Still
+// overridable via env so a future rotation doesn't require a code change.
 export const TEE_EXTENSION_PROXY_URL: string =
-  (import.meta.env.VITE_TEE_EXTENSION_PROXY_URL as string | undefined) ||
-  'https://exciting-acre-intersection-tvs.trycloudflare.com';
+  (import.meta.env.VITE_TEE_EXTENSION_PROXY_URL as string | undefined) || 'https://100-63-86-147.sslip.io';
 
 // Instruction fee (wei) required by sendInstructions() for this extension.
 // Matches fce-extension-scaffold's Go tooling (tools/pkg/utils/instructions.go
