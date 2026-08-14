@@ -11,3 +11,8 @@ fce-spike/tools-win/
 
 # Local Claude Code tool state, not project content
 .claude/
+
+# Foundry build output
+out/
+cache/
+broadcast/

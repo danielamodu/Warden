@@ -1,0 +1,14 @@
+[profile.default]
+src = "contracts"
+test = "test"
+out = "out"
+libs = ["lib"]
+solc = "0.8.28"
+
+# WardenDisputeResolver.submitVerdict reconstructs the TEE's multi-step signing
+# scheme, which needs more than the legacy codegen's 16 stack slots ("Stack too
+# deep"). The deploy scripts compile it the same way — see PHASE3.md.
+via_ir = true
+
+[fmt]
+line_length = 120
