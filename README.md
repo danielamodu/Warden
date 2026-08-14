@@ -99,13 +99,24 @@ simplest thing that exercises it end to end.
 
 ## Contracts on Coston2
 
-| Contract | Address |
-|---|---|
-| `WardenEscrow` | [`0x12FeF54Aa967Cc921D8A42528B7ff23218911e14`](https://coston2-explorer.flare.network/address/0x12FeF54Aa967Cc921D8A42528B7ff23218911e14) |
-| `WardenDisputeResolver` | [`0x662144FE2c59f58b3612Ee5bf252D06Ff1d2d91A`](https://coston2-explorer.flare.network/address/0x662144FE2c59f58b3612Ee5bf252D06Ff1d2d91A) |
-| `WardenWeatherResolver` | [`0x0a7b57FC9d907a55f72E7920E6645A6d40B972CF`](https://coston2-explorer.flare.network/address/0x0a7b57FC9d907a55f72E7920E6645A6d40B972CF) |
-| `WardenEscrow` (Phase 2 instance) | [`0xBDDD1E23604cA932c823Ef3397D96697aBB1c53D`](https://coston2-explorer.flare.network/address/0xBDDD1E23604cA932c823Ef3397D96697aBB1c53D) |
-| `InstructionSender` (TEE extension `66120`) | [`0x01269cc5498679ac790Af12cd803a1108a0aA235`](https://coston2-explorer.flare.network/address/0x01269cc5498679ac790Af12cd803a1108a0aA235) |
+Every Warden contract below is **source-verified on the Coston2 explorer** — read the code, call
+the read methods, and check the constructor arguments yourself.
+
+| Contract | Address | |
+|---|---|---|
+| `WardenEscrow` | [`0x12FeF54Aa967Cc921D8A42528B7ff23218911e14`](https://coston2-explorer.flare.network/address/0x12FeF54Aa967Cc921D8A42528B7ff23218911e14?tab=contract) | ✅ verified |
+| `WardenDisputeResolver` | [`0x662144FE2c59f58b3612Ee5bf252D06Ff1d2d91A`](https://coston2-explorer.flare.network/address/0x662144FE2c59f58b3612Ee5bf252D06Ff1d2d91A?tab=contract) | ✅ verified |
+| `WardenWeatherResolver` | [`0x0a7b57FC9d907a55f72E7920E6645A6d40B972CF`](https://coston2-explorer.flare.network/address/0x0a7b57FC9d907a55f72E7920E6645A6d40B972CF?tab=contract) | ✅ verified |
+| `WardenEscrow` (Phase 2 instance) | [`0xBDDD1E23604cA932c823Ef3397D96697aBB1c53D`](https://coston2-explorer.flare.network/address/0xBDDD1E23604cA932c823Ef3397D96697aBB1c53D?tab=contract) | ✅ verified |
+| `InstructionSender` (TEE extension `66120`) | [`0x01269cc5498679ac790Af12cd803a1108a0aA235`](https://coston2-explorer.flare.network/address/0x01269cc5498679ac790Af12cd803a1108a0aA235) | from Flare's FCE scaffold |
+
+Reproduce the verification yourself — the exact solc settings each phase deployed with are
+recorded as profiles in [`foundry.toml`](foundry.toml):
+
+```bash
+FOUNDRY_PROFILE=verify-phase3 forge verify-contract <address> <contract> \
+  --verifier blockscout --verifier-url https://coston2-explorer.flare.network/api
+```
 
 ### Proof it ran, end to end
 
