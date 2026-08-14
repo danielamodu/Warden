@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Copy } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Copy, LockKeyhole } from 'lucide-react';
 import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 import BackgroundGrid from '../components/BackgroundGrid';
@@ -67,6 +67,13 @@ export default function PayoutSuccess() {
     };
   }, [escrow?.beneficiaryXrplAddress, escrow?.status]);
 
+  // This screen is reachable by navigation, so it must not assert a payout the
+  // chain has not actually made. WardenEscrow only redeems when the escrow
+  // resolves true AND holds at least one full redemption lot — an escrow funded
+  // below one lot stays Unresolved with the funds still in the contract. Show
+  // that state honestly rather than a success page it hasn't earned.
+  const isReleased = escrow?.status === 'released';
+
   const resolverTx = escrow?.txs.releaseTxHash ?? escrow?.txs.verdictTxHash;
   const payoutTx = livePayout?.hash ?? escrow?.txs.payoutXrplTxHash;
   const displayAmount = livePayout ? livePayout.amount : escrow?.payout?.amount;
@@ -80,14 +87,48 @@ export default function PayoutSuccess() {
       <main className="relative z-10 px-5 py-10 lg:px-10 lg:py-16">
         <div className="mx-auto max-w-[1440px]">
           <div className="mb-10 flex flex-col items-center text-center">
-            <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-[#b4f56b]">
-              <CheckCircle2 size={40} className="text-[#0b0d10]" />
+            <div
+              className={`mb-8 flex h-20 w-20 items-center justify-center rounded-full ${
+                isReleased ? 'bg-[#b4f56b]' : 'bg-[#ffe278]'
+              }`}
+            >
+              {isReleased ? (
+                <CheckCircle2 size={40} className="text-[#0b0d10]" />
+              ) : (
+                <LockKeyhole size={36} className="text-[#0b0d10]" />
+              )}
             </div>
-            <h1 className="display text-5xl leading-[.95] text-white lg:text-6xl">Escrow released successfully.</h1>
+            <h1 className="display text-5xl leading-[.95] text-white lg:text-6xl">
+              {isReleased ? 'Escrow released successfully.' : 'Funds are still locked.'}
+            </h1>
           </div>
 
           {loading || !escrow ? (
             <div className="py-16 text-center font-mono text-xs uppercase tracking-widest text-zinc-500">Loading payout…</div>
+          ) : !isReleased ? (
+            <div className="mx-auto max-w-2xl rounded-2xl border border-[#ffe278]/25 bg-[#111518] p-8 text-center">
+              <p className="text-sm leading-relaxed text-zinc-400">
+                This escrow has not been released on-chain, so no XRP has been paid out. FAssets
+                redeems in whole lots — an escrow holding less than one full redemption lot cannot
+                release, and its funds stay in the contract until it does.
+              </p>
+              <div className="mt-6 flex flex-col items-center gap-2 font-mono text-xs text-zinc-500">
+                <span>
+                  held in escrow{' '}
+                  <span className="text-zinc-300">
+                    {escrow.amount} {escrow.amountAsset}
+                  </span>
+                </span>
+                <a
+                  className="text-[#72d7ff] hover:underline"
+                  href={`${EXPLORER}/address/${escrow.contracts.escrowAddress}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  verify on the Coston2 explorer
+                </a>
+              </div>
+            </div>
           ) : (
             <>
               <div className="grid gap-4 md:grid-cols-2">
