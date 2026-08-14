@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowDownRight,
@@ -15,6 +15,9 @@ import {
 import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 import BackgroundGrid from '../components/BackgroundGrid';
+import { PHASE2, XRPL_EXPLORER_TX, COSTON2_EXPLORER } from '../chain/config';
+import { getCurrentTemperatureC } from '../chain/weather';
+import { readWeatherCondition } from '../chain/reads';
 
 const flow = [
   { number: '01', title: 'Lock XRP', copy: 'Bridge native XRP into secure FXRP on Flare to start your smart escrow.', icon: Waves, accent: '#72d7ff' },
@@ -165,6 +168,47 @@ export default function Landing() {
   const [activeUseCase, setActiveUseCase] = useState<UseCase>('Weather agreements');
   const [activeFlow, setActiveFlow] = useState(0);
   const roadmapRef = useRef<HTMLDivElement>(null);
+
+  // The hero card shows the one escrow this contract actually processed:
+  // already settled and paid out on XRPL. The temperature beside it is the
+  // live reading from the same Open-Meteo location the FDC attestation used,
+  // and the threshold is read from WardenWeatherResolver on-chain rather than
+  // being restated here — so neither number can drift away from the truth.
+  const [liveTempC, setLiveTempC] = useState<number | null>(null);
+  const [thresholdC, setThresholdC] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getCurrentTemperatureC(PHASE2.coordinates.lat, PHASE2.coordinates.lon)
+      .then((t) => {
+        if (!cancelled) setLiveTempC(t);
+      })
+      .catch(() => {
+        /* leave null — the card renders a "—" placeholder rather than a stale number */
+      });
+
+    readWeatherCondition(Number(PHASE2.onChainEscrowId))
+      .then((c) => {
+        if (!cancelled && c.set) setThresholdC(Number(c.thresholdTemperatureCx100) / 100);
+      })
+      .catch(() => {
+        /* same — no invented fallback */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Proximity is derived, never written down: how far the live reading sits
+  // above (+) or below (-) the threshold the contract actually holds.
+  const proximityC = liveTempC !== null && thresholdC !== null ? liveTempC - thresholdC : null;
+  const fmtTemp = (v: number | null) => (v === null ? '—' : `${v.toFixed(1)}°C`);
+  // Position the marker across the bar between 5°C below and 5°C above the
+  // threshold, clamped so an extreme reading cannot push it off the track.
+  const markerPct =
+    proximityC === null ? 50 : Math.min(96, Math.max(4, ((proximityC + 5) / 10) * 100));
   const scrollRoadmap = (direction: 'left' | 'right') => {
     roadmapRef.current?.scrollBy({ left: direction === 'left' ? -360 : 360, behavior: 'smooth' });
   };
@@ -211,12 +255,17 @@ export default function Landing() {
               <div className="relative overflow-hidden rounded-[28px] border border-white/12 bg-[#12161a] p-5 shadow-2xl shadow-black/40 lg:p-7">
                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
                   <div>
-                    <div className="label">ACTIVE ESCROW</div>
+                    <div className="label">SETTLED ESCROW</div>
                     <div className="mt-1 text-sm text-zinc-300">Weather agreement / #00000</div>
                   </div>
-                  <div className="flex items-center gap-2 rounded-full border border-[#b4f56b]/30 bg-[#b4f56b]/10 px-2.5 py-1 text-[10px] text-[#b4f56b]">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#b4f56b]" />MONITORING
-                  </div>
+                  <a
+                    href={XRPL_EXPLORER_TX(PHASE2.knownPayoutXrplTxHash)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 rounded-full border border-[#b4f56b]/30 bg-[#b4f56b]/10 px-2.5 py-1 text-[10px] text-[#b4f56b] transition hover:bg-[#b4f56b]/20"
+                  >
+                    <Check size={11} />PAID OUT<ExternalLink size={9} className="opacity-70" />
+                  </a>
                 </div>
                 <div className="my-8 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                   <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
@@ -236,16 +285,24 @@ export default function Landing() {
                 <div className="rounded-2xl border border-white/10 bg-[#0d1013] p-4">
                   <div className="flex items-center justify-between">
                     <span className="label">CONDITION PROXIMITY</span>
-                    <span className="mono text-xs text-[#b4f56b]">+1.9°C</span>
+                    <span className={`mono text-xs ${proximityC !== null && proximityC >= 0 ? 'text-[#b4f56b]' : 'text-zinc-400'}`}>
+                      {proximityC === null ? '—' : `${proximityC >= 0 ? '+' : ''}${proximityC.toFixed(1)}°C`}
+                    </span>
                   </div>
                   <div className="relative mt-8 h-2 rounded-full bg-white/10">
-                    <div className="h-full w-[74%] rounded-full bg-gradient-to-r from-[#72d7ff] via-[#b4f56b] to-[#ffe278]" />
-                    <span className="absolute left-[74%] top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#b4f56b] bg-[#0d1013] shadow-[0_0_20px_rgba(180,245,107,.6)]" />
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-[#72d7ff] via-[#b4f56b] to-[#ffe278] transition-[width] duration-700"
+                      style={{ width: `${markerPct}%` }}
+                    />
+                    <span
+                      className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#b4f56b] bg-[#0d1013] shadow-[0_0_20px_rgba(180,245,107,.6)] transition-[left] duration-700"
+                      style={{ left: `${markerPct}%` }}
+                    />
                   </div>
                   <div className="mt-3 flex justify-between text-[10px] text-zinc-600">
-                    <span>24.0°C</span>
-                    <span className="text-zinc-400">Dubai / live</span>
-                    <span>28.0°C threshold</span>
+                    <span>{fmtTemp(liveTempC)}</span>
+                    <span className="text-zinc-400">{PHASE2.location} / live</span>
+                    <span>{fmtTemp(thresholdC)} threshold</span>
                   </div>
                 </div>
                 <div className="mt-5 flex items-center justify-between text-[10px] text-zinc-600">
@@ -253,8 +310,24 @@ export default function Landing() {
                       the "Weather agreement" label above — was previously
                       showing the Phase 3 dispute contract's address instead,
                       an internal mismatch flagged and fixed. */}
-                  <span className="mono">0xBDDD…53D</span>
-                  <span>CONTRACT VERIFIED <Check size={12} className="ml-1 inline text-[#b4f56b]" /></span>
+                  <a
+                    href={`${COSTON2_EXPLORER}/address/${PHASE2.escrowAddress}?tab=contract`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mono transition hover:text-zinc-400"
+                  >
+                    0xBDDD…53D
+                  </a>
+                  {/* Source-verified on the Coston2 explorer, so this badge is
+                      something a reader can check rather than take on trust. */}
+                  <a
+                    href={`${COSTON2_EXPLORER}/address/${PHASE2.escrowAddress}?tab=contract`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="transition hover:text-zinc-400"
+                  >
+                    CONTRACT VERIFIED <Check size={12} className="ml-1 inline text-[#b4f56b]" />
+                  </a>
                 </div>
               </div>
             </div>
