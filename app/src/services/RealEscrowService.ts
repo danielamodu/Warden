@@ -179,14 +179,17 @@ export class RealEscrowService implements IEscrowService {
       readNextEscrowId(PHASE3.escrowAddress),
     ]);
 
-    const escrows: Escrow[] = [];
+    // Built concurrently rather than one after another — each build is several
+    // independent RPC reads, and awaiting them in sequence made the dashboard
+    // take seconds to first paint on a cold load.
+    const builds: Promise<Escrow>[] = [];
     if (phase2Next > 0) {
-      escrows.push(await buildPhase2Escrow());
+      builds.push(buildPhase2Escrow());
     }
     for (let i = 0; i < phase3Next; i++) {
-      escrows.push(await buildPhase3Escrow(String(i), i));
+      builds.push(buildPhase3Escrow(String(i), i));
     }
-    return escrows;
+    return Promise.all(builds);
   }
 
   async resolveAndRelease(id: string): Promise<{ txHash: string; amount: number }> {

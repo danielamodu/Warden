@@ -9,7 +9,7 @@ import { useWallet } from '../hooks/useWallet';
 import type { Escrow, EscrowStatus } from '../types';
 import { truncateMiddle } from '../utils/format';
 
-type Filter = 'all' | EscrowStatus;
+type Filter = 'all' | 'mine' | EscrowStatus;
 
 const STATUS_META: Record<EscrowStatus, { label: string; bg: string; text: string; dot: string }> = {
   pending: { label: 'LOCKED', bg: 'bg-white/[.06]', text: 'text-zinc-300', dot: 'bg-zinc-400' },
@@ -92,17 +92,24 @@ export default function Dashboard() {
   const { address } = useWallet();
   const [filter, setFilter] = useState<Filter>('all');
 
-  // These are the connected wallet's own vaults, so scope them to the buyer the
-  // escrow contract itself recorded — reading `buyer` off each escrow rather
-  // than scanning EscrowFunded logs, which Coston2's public RPC caps at a
-  // 30-block range. With no wallet connected there is no "mine" to show, so the
-  // list stays empty and the empty state invites connecting.
-  const escrows = useMemo(
-    () => (address ? allEscrows.filter((e) => e.buyer.toLowerCase() === address.toLowerCase()) : []),
-    [allEscrows, address]
+  // Every escrow is public on-chain, so the default view shows all of them —
+  // hiding them behind a wallet connection would misrepresent an open ledger
+  // and leave a first-time visitor staring at nothing. "Mine" is a filter over
+  // the same list, scoped to the buyer the escrow contract itself recorded, so
+  // ownership is read from `buyer` rather than scanned out of EscrowFunded logs
+  // (Coston2's public RPC caps eth_getLogs at a 30-block range).
+  const escrows = allEscrows;
+
+  const mine = useMemo(
+    () => (address ? escrows.filter((e) => e.buyer.toLowerCase() === address.toLowerCase()) : []),
+    [escrows, address]
   );
 
-  const filtered = useMemo(() => (filter === 'all' ? escrows : escrows.filter((e) => e.status === filter)), [filter, escrows]);
+  const filtered = useMemo(() => {
+    if (filter === 'all') return escrows;
+    if (filter === 'mine') return mine;
+    return escrows.filter((e) => e.status === filter);
+  }, [filter, escrows, mine]);
 
   const totalLocked = escrows.reduce((sum, e) => sum + (e.status !== 'released' ? e.amount : 0), 0);
   const totalPaid = escrows.reduce((sum, e) => sum + (e.payout?.amount ?? 0), 0);
@@ -117,10 +124,20 @@ export default function Dashboard() {
         <div className="mx-auto max-w-[1440px]">
           <div className="flex flex-col justify-between gap-6 border-b border-white/10 pb-8 md:flex-row md:items-end">
             <div>
-              <div className="label text-[#b4f56b]">ACTIVE VAULTS</div>
+              <div className="label text-[#b4f56b]">{address ? 'ACTIVE VAULTS' : 'PUBLIC LEDGER'}</div>
               <h1 className="display mt-4 text-5xl leading-[.92] text-white lg:text-7xl">
-                Monitor your escrows<br /><span className="text-zinc-500">in real-time.</span>
+                {address ? (
+                  <>Monitor your escrows<br /><span className="text-zinc-500">in real-time.</span></>
+                ) : (
+                  <>Every escrow on Warden,<br /><span className="text-zinc-500">read live from Coston2.</span></>
+                )}
               </h1>
+              {!address && (
+                <p className="mt-4 max-w-md text-sm text-zinc-500">
+                  Escrow records are public on-chain, so anyone can audit them — no wallet needed.
+                  Connect one to filter to your own.
+                </p>
+              )}
             </div>
             <Link to="/create" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#b4f56b] px-5 py-3 text-sm font-semibold text-[#0b0d10] transition-all hover:gap-4 active:scale-[.97]">
               <Plus size={16} /> New escrow
@@ -152,7 +169,7 @@ export default function Dashboard() {
 
           <div className="mt-12 flex flex-col gap-4 border-b border-white/10 pb-4 md:flex-row md:items-center md:justify-between">
             <div className="flex gap-1 overflow-x-auto">
-              {(['all', 'pending', 'released', 'disputed'] as Filter[]).map((f) => (
+              {((address ? ['all', 'mine', 'pending', 'released', 'disputed'] : ['all', 'pending', 'released', 'disputed']) as Filter[]).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
@@ -160,7 +177,7 @@ export default function Dashboard() {
                     filter === f ? 'bg-white text-[#0b0d10]' : 'text-zinc-600 hover:text-white'
                   }`}
                 >
-                  {f === 'all' ? 'ALL' : STATUS_META[f].label}
+                  {f === 'all' ? 'ALL' : f === 'mine' ? `MINE (${mine.length})` : STATUS_META[f].label}
                 </button>
               ))}
             </div>
@@ -182,11 +199,11 @@ export default function Dashboard() {
           {!loading && filtered.length === 0 && (
             <div className="mt-10 rounded-2xl border border-dashed border-white/15 bg-white/[.02] py-24 text-center">
               <h2 className="display text-2xl text-white">
-                {!address ? 'Connect a wallet' : 'No escrows yet'}
+                {filter === 'mine' ? 'None funded by this wallet' : 'No escrows yet'}
               </h2>
               <p className="mt-3 text-sm text-zinc-500">
-                {!address
-                  ? 'Your vaults are read from the escrow contract by the address that funded them. Connect a wallet to see yours.'
+                {filter === 'mine'
+                  ? 'This address has not funded any escrows yet. Switch to ALL to browse every escrow on Warden.'
                   : filter === 'all'
                     ? 'Create your first escrow to get started with Warden.'
                     : `No escrows currently in "${filter}" status.`}

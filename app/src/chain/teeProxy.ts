@@ -9,10 +9,12 @@
 // unreachable, surface the failure.
 import { TEE_EXTENSION_PROXY_URL } from './config';
 
-// Same CORS situation as chain/xrpl.ts — routed through Vite's dev proxy
-// (see vite.config.ts) when running locally; a real deployment needs its own
-// server-side proxy or a CORS-enabled proxy deployment.
-const TEE_PROXY_BASE = import.meta.env.DEV ? '/tee-proxy' : TEE_EXTENSION_PROXY_URL;
+// Same CORS situation as chain/xrpl.ts, so this is always a same-origin path:
+// Vite's dev proxy forwards it locally (see vite.config.ts) and a Vercel
+// rewrite forwards it in production (see vercel.json). Calling the extension
+// proxy directly from the browser is blocked in both. TEE_EXTENSION_PROXY_URL
+// stays the single source of truth for where that path points.
+const TEE_PROXY_BASE = '/tee-proxy';
 
 export interface TeeInfoResponse {
   teeInfo: {

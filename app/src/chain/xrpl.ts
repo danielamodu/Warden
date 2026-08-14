@@ -8,12 +8,12 @@ import { XRPL_TESTNET_JSON_RPC } from './config';
 
 // The public XRPL testnet JSON-RPC endpoint sends no CORS headers (confirmed
 // empirically: browser fetch is blocked with "No 'Access-Control-Allow-Origin'
-// header"). In local dev, Vite's server.proxy (see vite.config.ts) forwards
-// this same-origin path through to the real endpoint. In a production
-// deployment (no Vite dev server), the direct URL is used and will hit the
-// same CORS wall until a small server-side proxy is stood up — an infra-side
-// fix outside this app's scope, called out in the final report.
-const XRPL_ENDPOINT = import.meta.env.DEV ? '/xrpl-rpc/' : XRPL_TESTNET_JSON_RPC;
+// header"), so this is always called through a same-origin path. Vite's
+// server.proxy forwards it in local dev (see vite.config.ts) and a Vercel
+// rewrite does the same in production (see vercel.json) — calling the endpoint
+// directly from the browser fails in both. XRPL_TESTNET_JSON_RPC remains the
+// single source of truth for where that path actually points.
+const XRPL_ENDPOINT = '/xrpl-rpc/';
 
 async function xrplRequest<T = any>(method: string, params: Record<string, unknown>[]): Promise<T> {
   const res = await fetch(XRPL_ENDPOINT, {
