@@ -8,6 +8,8 @@ import { escrowService } from '../services';
 import { useDispute } from '../hooks/useDispute';
 import { useEscrowData } from '../hooks/useEscrowData';
 import { copyToClipboard, truncateMiddle } from '../utils/format';
+import { readLiveTeeMachine, type LiveTeeMachine } from '../chain/reads';
+import { teeStatusLabel } from '../chain/abis';
 import type { ContractInfo } from '../types';
 
 function CopyAddress({ address }: { address: string }) {
@@ -28,8 +30,30 @@ export default function ProofTransparency() {
   const { dispute } = useDispute('phase3');
   const { escrow: phase2Escrow } = useEscrowData('phase2');
 
+  // The enclave running right now, not whichever one ruled a past dispute —
+  // Confidential Space keys are memory-only, so a relaunch mints a fresh
+  // teeId and the old one goes dead (see PHASE3.md). Fetched independently of
+  // `dispute` so this panel reflects live health even before any dispute has
+  // ever run in this session.
+  const [liveTee, setLiveTee] = useState<LiveTeeMachine | null>(null);
+  const [liveTeeError, setLiveTeeError] = useState(false);
+
   useEffect(() => {
     escrowService.listContracts().then(setContracts);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    readLiveTeeMachine()
+      .then((m) => {
+        if (!cancelled) setLiveTee(m);
+      })
+      .catch(() => {
+        if (!cancelled) setLiveTeeError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const selected = contracts[active];
@@ -80,18 +104,35 @@ export default function ProofTransparency() {
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#d5a5ff]/10 text-[#d5a5ff]"><ServerCog size={17} /></span>
                   <div><div className="text-sm text-white">Secure enclave manager</div><div className="label mt-1">AUTOMATED</div></div>
                 </div>
-                <span className="rounded-full border border-[#b4f56b]/30 bg-[#b4f56b]/10 px-2 py-1 text-[9px] text-[#b4f56b]">{dispute?.teeStatus ?? 'LOADING'}</span>
+                <span
+                  className={`rounded-full border px-2 py-1 text-[9px] ${
+                    liveTeeError
+                      ? 'border-red-400/30 bg-red-400/10 text-red-400'
+                      : liveTee
+                        ? 'border-[#b4f56b]/30 bg-[#b4f56b]/10 text-[#b4f56b]'
+                        : 'border-white/15 bg-white/5 text-zinc-500'
+                  }`}
+                >
+                  {liveTeeError ? 'UNREACHABLE' : liveTee ? teeStatusLabel(liveTee.status) : 'LOADING'}
+                </span>
               </div>
               <div className="mt-8 grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-white/10 bg-[#0d1013]/60 p-3">
                   <div className="label">ENCLAVE ID</div>
-                  <div className="mt-3 mono truncate text-sm text-zinc-300" title={dispute?.teeId}>{dispute ? truncateMiddle(dispute.teeId) : '…'}</div>
+                  <div className="mt-3 mono truncate text-sm text-zinc-300" title={liveTee?.teeId}>
+                    {liveTee ? truncateMiddle(liveTee.teeId) : liveTeeError ? '—' : '…'}
+                  </div>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-[#0d1013]/60 p-3">
                   <div className="label">EXTENSION</div>
-                  <div className="mt-3 mono text-sm text-zinc-300">#{dispute?.extensionId ?? '…'}</div>
+                  <div className="mt-3 mono text-sm text-zinc-300">#{liveTee?.extensionId ?? '…'}</div>
                 </div>
               </div>
+              {/* This panel reads whichever enclave is answering /info right
+                  now, live — not the id that ruled on a past dispute, which
+                  goes stale the moment the TEE restarts and mints a fresh key
+                  (see PHASE3.md). */}
+              <div className="mt-2 text-[10px] text-zinc-600">Live enclave, checked on load — not a historical record.</div>
               <div className="mt-5 flex items-center gap-2 text-xs text-zinc-500"><LockKeyhole size={13} className="text-[#d5a5ff]" /> Evidence is fully encrypted before review.</div>
             </div>
           </div>

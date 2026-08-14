@@ -5,6 +5,7 @@ import { ethers } from 'ethers';
 import { MACHINE_MANAGER_ABI, WARDEN_DISPUTE_RESOLVER_ABI, WARDEN_ESCROW_ABI, WARDEN_WEATHER_RESOLVER_ABI } from './abis';
 import { PHASE2, PHASE3 } from './config';
 import { getReadProvider } from './provider';
+import { fetchTeeInfo } from './teeProxy';
 
 export interface RawEscrow {
   conditionId: string;
@@ -76,6 +77,25 @@ export interface LiveTeeMachine {
   extensionId: number;
   publicKeyX: string;
   publicKeyY: string;
+}
+
+/**
+ * The enclave that is live *right now*, rather than whichever one ruled some
+ * past dispute. Confidential Space keys are memory-only, so every relaunch of
+ * the TEE mints a fresh teeId and retires the previous one (see PHASE3.md) —
+ * meaning a hardcoded id goes stale the first time the enclave restarts.
+ *
+ * Instead the id is derived from the public key the running enclave itself
+ * serves on /info, using the same secp256k1 derivation WardenDisputeResolver
+ * applies on-chain: address = last 20 bytes of keccak256(X || Y). Whatever
+ * enclave is actually answering is therefore the one described here, and its
+ * status is then read from FlareTeeManager.
+ */
+export async function readLiveTeeMachine(): Promise<LiveTeeMachine> {
+  const info = await fetchTeeInfo();
+  const { x, y } = info.teeInfo.publicKey;
+  const teeId = ethers.getAddress(ethers.dataSlice(ethers.keccak256(ethers.concat([x, y])), 12));
+  return readTeeMachine(teeId);
 }
 
 export async function readTeeMachine(teeId: string): Promise<LiveTeeMachine> {
