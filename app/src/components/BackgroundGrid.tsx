@@ -1,12 +1,4 @@
+/** Fixed dotted-grid backdrop, matching the Manus redesign's `.grid-bg` treatment. */
 export default function BackgroundGrid() {
-  return (
-    <div className="bg-grid-fixed">
-      <div className="vertical-lines">
-        <div className="vertical-line"></div>
-        <div className="vertical-line"></div>
-        <div className="vertical-line"></div>
-      </div>
-      <div className="square-grid"></div>
-    </div>
-  );
+  return <div className="pointer-events-none fixed inset-0 z-0 opacity-70 grid-bg" />;
 }

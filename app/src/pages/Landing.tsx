@@ -1,338 +1,506 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import {
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  Check,
+  ExternalLink,
+  LockKeyhole,
+  ShieldCheck,
+  Sparkles,
+  Waves,
+  Zap,
+} from 'lucide-react';
 import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 import BackgroundGrid from '../components/BackgroundGrid';
-import WordReveal from '../components/WordReveal';
-import styles from './Landing.module.css';
 
-type TabId = 'trade' | 'weather' | 'ip';
-
-const roadmap = [
-  { quarter: 'Q1 2025', title: 'LLM-Assisted Arbitration', body: 'Integration of fine-tuned TEE-safe language models to parse ambiguous contract language in complex business disputes.' },
-  { quarter: 'Q2 2025', title: 'Partial Split Verdicts', body: 'Mechanism for graduated payouts allowing dispute outcomes to reflect shared responsibility and partial fulfillment.' },
-  { quarter: 'Q3 2025', title: 'Multiple Dispute Categories', body: 'Specialized TEE resolvers for distinct verticals like Freight, Ad-tech, and High-Ticket E-commerce.' },
-  { quarter: 'Q4 2025', title: 'Trade Finance Verticals', body: 'Dedicated institutional dashboards with integrated L/C workflows and automated document notarization.' },
+const flow = [
+  { number: '01', title: 'Lock XRP', copy: 'Bridge native XRP into secure FXRP on Flare to start your smart escrow.', icon: Waves, accent: '#72d7ff' },
+  { number: '02', title: 'Set terms', copy: 'Define the exact payout condition and recipient address directly in the vault.', icon: LockKeyhole, accent: '#b4f56b' },
+  { number: '03', title: 'Verify condition', copy: 'Flare Data Connector checks real-world data automatically without human bias.', icon: Zap, accent: '#b4f56b' },
+  { number: '04', title: 'Secure ruling', copy: 'If a dispute occurs, a secure enclave reviews the evidence and signs a verdict.', icon: ShieldCheck, accent: '#d5a5ff' },
+  { number: '05', title: 'Automatic release', copy: 'Funds release instantly to the correct recipient once terms are met.', icon: Check, accent: '#ffe278' },
 ];
 
-function RoadmapItem({ quarter, title, body }: { quarter: string; title: string; body: string }) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [visible, setVisible] = useState(false);
+// Only "Weather agreements" is real — WardenWeatherResolver + the live
+// Open-Meteo/FDC path is the only condition type this codebase actually
+// implements (see CreateEscrow's condition-type picker: weather is the only
+// enabled option, delivery/market/oracle are disabled "Coming soon").
+// "Trade finance" and "IP licensing" have no resolver, no tracking
+// integration, and no royalty mechanism anywhere in this codebase — they're
+// presented here as roadmap items, using the same "NEXT / 0x" framing and
+// language as the roadmap section below (03 / More resolver types: "Support
+// for logistics, freight, and digital commerce milestones") so this section
+// doesn't contradict that one.
+const useCases = {
+  'Weather agreements': {
+    status: 'live',
+    kicker: 'WEATHER DEPOSIT',
+    title: 'Turn weather thresholds into automated payouts.',
+    copy: 'When temperature or rainfall crosses your agreed limit, Flare Data Connector verifies the data and triggers the release instantly.',
+    metric: '29.9°C',
+    metricLabel: 'verified temperature',
+    chip: 'Open-Meteo API verified',
+    visual: 'weather',
+  },
+  'Trade finance': {
+    status: 'soon',
+    kicker: 'ROADMAP · NEXT / 03',
+    title: 'Release payment only when shipment milestones clear.',
+    copy: 'Not built yet. Planned as a future resolver type — cargo and logistics milestones tracked toward automated release, the same "more resolver types" item on the roadmap below.',
+    metric: 'Planned',
+    metricLabel: 'more resolver types',
+    chip: 'Not yet available — no live resolver',
+    visual: 'trade',
+  },
+  'IP licensing': {
+    status: 'soon',
+    kicker: 'ROADMAP · FUTURE RESOLVER',
+    title: 'Automate creator royalties based on verifiable usage.',
+    copy: 'Not built yet. No royalty or usage-attestation mechanism exists in this protocol today — this is an illustration of a future resolver type, not a live feature.',
+    metric: 'Planned',
+    metricLabel: 'future resolver type',
+    chip: 'Not yet available — no live resolver',
+    visual: 'ip',
+  },
+} as const;
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => entries.forEach((entry) => entry.isIntersecting && setVisible(true)),
-      { threshold: 0.5 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+type UseCase = keyof typeof useCases;
 
+function WeatherVisual() {
   return (
-    <div ref={ref} className={`relative pl-20 transition-opacity duration-1000 ${visible ? styles.roadmapItemVisible : styles.roadmapItem}`}>
-      <div className="absolute left-[-1px] top-4 w-4 h-4 bg-[#3d7068] rounded-full border-4 border-[#f7f6f2]"></div>
-      <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[#3d7068] mb-2">{quarter}</div>
-      <h3 className="font-mono text-xl uppercase mb-4">{title}</h3>
-      <p className="font-sans opacity-70 max-w-xl">{body}</p>
+    <div className="min-h-[240px] rounded-2xl border border-white/10 bg-[#161b1d] p-5">
+      <div className="flex items-center justify-between">
+        <span className="label">LIVE WEATHER CHECK</span>
+        <span className="mono text-[10px] text-[#b4f56b]">ATTESTED</span>
+      </div>
+      <div className="mt-8 rounded-xl border border-white/10 bg-[#0d1013] p-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-zinc-300">Dubai temperature</span>
+          <span className="mono text-sm text-[#b4f56b]">29.9°C</span>
+        </div>
+        <div className="mt-4 h-1.5 rounded-full bg-white/10">
+          <div className="h-full w-[78%] rounded-full bg-[#b4f56b]" />
+        </div>
+        <div className="mt-2 flex justify-between text-[10px] text-zinc-500">
+          <span>Target: &gt; 28°C</span>
+          <span className="text-[#b4f56b]">Condition met</span>
+        </div>
+      </div>
+      <div className="mt-5 flex items-center justify-between text-xs">
+        <span className="text-zinc-500">Automatic payout</span>
+        <span className="mono text-zinc-300">FXRP → Recipient</span>
+      </div>
+    </div>
+  );
+}
+
+function TradeVisual() {
+  return (
+    <div className="relative min-h-[240px] overflow-hidden rounded-2xl border border-dashed border-white/15 bg-[#161b1d]/60 p-5 grayscale">
+      <div className="absolute right-4 top-4 rounded-full border border-white/15 bg-white/[.04] px-2.5 py-1 text-[9px] uppercase tracking-[.1em] text-zinc-400">Coming soon</div>
+      <div className="flex items-center justify-between">
+        <span className="label">SHIPMENT MILESTONE</span>
+        <span className="mono text-[10px] text-zinc-500">MOCKUP</span>
+      </div>
+      <div className="mt-8 rounded-xl border border-white/10 bg-[#0d1013] p-4 opacity-60">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-zinc-400">Rotterdam → Jebel Ali</span>
+          <span className="mono text-xs text-zinc-500">Not tracked</span>
+        </div>
+        <div className="mt-4 h-1.5 rounded-full bg-white/10">
+          <div className="h-full w-[92%] rounded-full bg-zinc-600" />
+        </div>
+        <div className="mt-2 flex justify-between text-[10px] text-zinc-600">
+          <span>Customs check</span>
+          <span>No live resolver</span>
+        </div>
+      </div>
+      <div className="mt-5 flex items-center justify-between text-xs">
+        <span className="text-zinc-600">Release status</span>
+        <span className="mono text-zinc-500">Not built — roadmap item</span>
+      </div>
+    </div>
+  );
+}
+
+function IpVisual() {
+  return (
+    <div className="relative min-h-[240px] overflow-hidden rounded-2xl border border-dashed border-white/15 bg-[#161b1d]/60 p-5 grayscale">
+      <div className="absolute right-4 top-4 rounded-full border border-white/15 bg-white/[.04] px-2.5 py-1 text-[9px] uppercase tracking-[.1em] text-zinc-400">Coming soon</div>
+      <div className="flex items-center justify-between">
+        <span className="label">ROYALTY TRIGGER</span>
+        <span className="mono text-[10px] text-zinc-500">MOCKUP</span>
+      </div>
+      <div className="mt-10 rounded-xl border border-dashed border-white/15 bg-white/[.02] p-4 opacity-60">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[.06] text-zinc-500">
+            <Sparkles size={16} />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-zinc-400">No usage-attestation mechanism</div>
+            <div className="mt-1 text-xs text-zinc-600">Illustrative only — not implemented</div>
+          </div>
+        </div>
+        <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full w-[86%] rounded-full bg-zinc-600" />
+        </div>
+        <div className="mt-2 flex justify-between text-[10px] text-zinc-600">
+          <span>—</span>
+          <span>—</span>
+        </div>
+      </div>
+      <div className="mt-5 flex items-center justify-between text-xs">
+        <span className="text-zinc-600">Payout route</span>
+        <span className="mono text-zinc-500">Not built — roadmap item</span>
+      </div>
     </div>
   );
 }
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabId>('trade');
+  const [activeUseCase, setActiveUseCase] = useState<UseCase>('Weather agreements');
+  const [activeFlow, setActiveFlow] = useState(0);
+  const roadmapRef = useRef<HTMLDivElement>(null);
+  const scrollRoadmap = (direction: 'left' | 'right') => {
+    roadmapRef.current?.scrollBy({ left: direction === 'left' ? -360 : 360, behavior: 'smooth' });
+  };
+  const currentCase = useCases[activeUseCase];
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative bg-[#0b0d10] text-zinc-100">
       <BackgroundGrid />
       <NavBar activeItem="about" />
 
-      <main className="pt-48">
+      <main className="relative z-10 noise">
         {/* HERO */}
-        <section className="max-w-7xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center mb-8">
-            <span className={styles.pulseDot}></span>
-            <span className="font-mono text-[10px] tracking-[0.3em] uppercase opacity-60">System Status: Live</span>
-          </div>
-
-          <h1 className="font-serif text-[9vw] leading-[0.9] uppercase font-light tracking-tighter mb-8">
-            Autonomous<br />
-            Editorial <span className="italic opacity-50">Trust</span>
-          </h1>
-
-          <p className="max-w-2xl mx-auto text-xl md:text-2xl font-sans font-light leading-relaxed mb-12">
-            Sophisticated escrow protocols featuring <span className="italic text-[#B4B4B4]">verified infrastructure</span>, FAssets-backed liquidity, and confidential <span className="italic text-[#B4B4B4]">dispute resolution</span> for the digital era.
-          </p>
-
-          <button
-            id="hero-cta"
-            onClick={() => navigate('/connect')}
-            className="cta-button px-10 py-5 text-white font-mono text-[10px] tracking-[0.25em] uppercase rounded-[2px] mb-24 inline-flex items-center gap-3"
-          >
-            Create Escrow
-            <iconify-icon icon="lucide:arrow-right"></iconify-icon>
-          </button>
-          <Link to="/dashboard" className="block mt-6 font-mono text-[10px] tracking-[0.2em] uppercase opacity-40 hover:opacity-100 transition-opacity">
-            View Dashboard
-          </Link>
-        </section>
-
-        {/* TRUST MARKERS */}
-        <section className="max-w-7xl mx-auto border-y border-[#e5e4de]">
-          <div className="px-6 pt-20 pb-12 text-center">
-            <WordReveal className="font-serif text-4xl uppercase font-light tracking-tight mb-4">
-              Built on Verified Infrastructure
-            </WordReveal>
-          </div>
-          <div className="grid md:grid-cols-3 divide-x divide-[#e5e4de]">
-            {[
-              { icon: 'lucide:shield-check', protocol: 'Protocol 01', title: 'FDC Verification', body: 'On-chain attestation for external data, ensuring conditions are met with mathematical certainty.' },
-              { icon: 'lucide:coins', protocol: 'Protocol 02', title: 'FAssets-Backed', body: 'Deep liquidity and collateral management powered by trustless asset bridging and redemption flows.' },
-              { icon: 'lucide:lock', protocol: 'Protocol 03', title: 'Confidential Res', body: 'Multi-party computation and TEE-based processing for disputes that require total data privacy.' },
-            ].map((card) => (
-              <div key={card.title} className="p-12 editorial-transition group card-editorial">
-                <div className="w-12 h-12 border border-[#e5e4de] flex items-center justify-center mb-8 rounded-[2px] group-hover:border-[#3d7068] transition-colors">
-                  <iconify-icon icon={card.icon} class="text-2xl text-[#3d7068]"></iconify-icon>
-                </div>
-                <span className="font-mono text-[10px] tracking-[0.3em] uppercase block mb-4">{card.protocol}</span>
-                <h3 className="font-serif text-2xl uppercase mb-4">{card.title}</h3>
-                <p className="font-sans text-sm leading-relaxed opacity-70 text-left">{card.body}</p>
+        <section className="relative px-5 pb-20 pt-16 lg:px-10 lg:pb-28 lg:pt-24">
+          <div className="mx-auto grid max-w-[1440px] gap-14 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:gap-20">
+            <div>
+              <div className="mb-7 flex items-center gap-3">
+                <span className="h-px w-10 bg-[#b4f56b]" />
+                <span className="label text-[#b4f56b]">SMART ESCROW ON FLARE</span>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* STATISTICS */}
-        <section className="max-w-7xl mx-auto grid md:grid-cols-3 divide-x divide-[#e5e4de] border-b border-[#e5e4de]">
-          {[
-            { icon: 'lucide:activity', value: '$500M+', label: 'Total Value Secured' },
-            { icon: 'lucide:users', value: '12K+', label: 'Active Trust Nodes' },
-            { icon: 'lucide:check-circle', value: '100%', label: 'Successful Payouts' },
-          ].map((stat) => (
-            <div key={stat.label} className="p-10 editorial-transition card-editorial">
-              <div className="w-10 h-10 border border-[#e5e4de] flex items-center justify-center mb-6 rounded-[2px]">
-                <iconify-icon icon={stat.icon} class="text-xl opacity-40"></iconify-icon>
+              <h1 className="display max-w-4xl text-[clamp(3.7rem,8.8vw,8.6rem)] font-medium leading-[.87] text-white">
+                Hold funds.<br />
+                <span className="text-zinc-500">Verify reality.</span><br />
+                <span className="text-[#b4f56b]">Release automatically.</span>
+              </h1>
+              <p className="mt-9 max-w-xl text-lg leading-relaxed text-zinc-400">
+                Lock XRP safely on Flare, check real-world conditions automatically, and pay out winners without
+                intermediaries.
+              </p>
+              <div className="mt-10 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => navigate('/connect')}
+                  className="group inline-flex items-center gap-3 rounded-full bg-[#b4f56b] px-5 py-3 text-sm font-semibold text-[#0b0d10] transition-all hover:gap-5 active:scale-[.97]"
+                >
+                  Create escrow <ArrowRight size={16} />
+                </button>
+                <Link to="/dashboard" className="inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-3 text-sm text-zinc-300 transition-colors hover:border-white/40 hover:text-white">
+                  View dashboard <ArrowUpRight size={15} />
+                </Link>
               </div>
-              <div className="font-serif text-5xl mb-2">{stat.value}</div>
-              <div className="font-mono text-[10px] tracking-[0.2em] uppercase opacity-60">{stat.label}</div>
             </div>
-          ))}
+
+            <div className="relative lg:pt-10">
+              <div className="absolute -inset-10 rounded-full bg-[#b4f56b]/[.05] blur-3xl" />
+              <div className="relative overflow-hidden rounded-[28px] border border-white/12 bg-[#12161a] p-5 shadow-2xl shadow-black/40 lg:p-7">
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div>
+                    <div className="label">ACTIVE ESCROW</div>
+                    <div className="mt-1 text-sm text-zinc-300">Weather agreement / #00000</div>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-full border border-[#b4f56b]/30 bg-[#b4f56b]/10 px-2.5 py-1 text-[10px] text-[#b4f56b]">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#b4f56b]" />MONITORING
+                  </div>
+                </div>
+                <div className="my-8 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
+                    <div className="label">SENDER</div>
+                    <div className="mt-4 text-lg font-medium">10.00 <span className="text-zinc-500">FXRP</span></div>
+                    <div className="mt-1 mono text-[9px] text-zinc-600">0x17D…88A2</div>
+                  </div>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#b4f56b]/40 bg-[#b4f56b]/10 text-[#b4f56b]">
+                    <ArrowRight size={15} />
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[.03] p-4">
+                    <div className="label">RECEIVER</div>
+                    <div className="mt-4 text-lg font-medium">XRPL</div>
+                    <div className="mt-1 mono text-[9px] text-zinc-600">rQhi…4xnP</div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-[#0d1013] p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="label">CONDITION PROXIMITY</span>
+                    <span className="mono text-xs text-[#b4f56b]">+1.9°C</span>
+                  </div>
+                  <div className="relative mt-8 h-2 rounded-full bg-white/10">
+                    <div className="h-full w-[74%] rounded-full bg-gradient-to-r from-[#72d7ff] via-[#b4f56b] to-[#ffe278]" />
+                    <span className="absolute left-[74%] top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#b4f56b] bg-[#0d1013] shadow-[0_0_20px_rgba(180,245,107,.6)]" />
+                  </div>
+                  <div className="mt-3 flex justify-between text-[10px] text-zinc-600">
+                    <span>24.0°C</span>
+                    <span className="text-zinc-400">Dubai / live</span>
+                    <span>28.0°C threshold</span>
+                  </div>
+                </div>
+                <div className="mt-5 flex items-center justify-between text-[10px] text-zinc-600">
+                  {/* Real WardenEscrow — Phase 2 (Weather) address, matching
+                      the "Weather agreement" label above — was previously
+                      showing the Phase 3 dispute contract's address instead,
+                      an internal mismatch flagged and fixed. */}
+                  <span className="mono">0xBDDD…53D</span>
+                  <span>CONTRACT VERIFIED <Check size={12} className="ml-1 inline text-[#b4f56b]" /></span>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* HOW IT WORKS */}
-        <section className="max-w-7xl mx-auto px-6 py-32 border-b border-[#e5e4de]">
-          <div className="grid md:grid-cols-2 gap-20">
-            <div>
-              <WordReveal className="font-serif text-4xl uppercase font-light tracking-tight mb-12">How it works</WordReveal>
-              <div className="space-y-0">
-                {[
-                  { n: '01', title: 'Fund Escrow', body: 'Initialize your secure vault using XRPL, Xaman, or Ledger via the FAssets bridge.' },
-                  { n: '02', title: 'Set Conditions', body: 'Define weather thresholds, delivery confirmation, or custom API oracle triggers.' },
-                  { n: '03', title: 'Monitor Live', body: 'Real-time dashboards pull from open-meteo and on-chain FDC attestations.' },
-                  { n: '04', title: 'Resolve with Proof', body: 'Automatic release upon condition match or TEE-verified dispute resolution.' },
-                ].map((step) => (
-                  <div key={step.n} className={`${styles.stepItem} pl-8 py-8 border-b border-[#e5e4de]`}>
-                    <div className="font-mono text-[10px] tracking-[0.3em] uppercase opacity-40 mb-2">{step.n}</div>
-                    <h4 className="font-serif text-2xl uppercase mb-3">{step.title}</h4>
-                    <p className="font-sans text-base opacity-70">{step.body}</p>
-                  </div>
-                ))}
+        <section className="border-y border-white/10 bg-[#101417] px-5 py-20 lg:px-10">
+          <div className="mx-auto max-w-[1440px]">
+            <div className="grid gap-10 lg:grid-cols-[.72fr_1.28fr] lg:items-end">
+              <div>
+                <div className="label text-[#b4f56b]">01 / HOW IT WORKS</div>
+                <h2 className="display mt-4 max-w-xl text-5xl leading-[.95] text-white lg:text-7xl">Simple steps to trustless escrow.</h2>
               </div>
+              <p className="max-w-md text-sm leading-relaxed text-zinc-500 lg:justify-self-end">
+                Every escrow flows from locked funds to automated release based on verified real-world facts.
+              </p>
             </div>
-            <div className="hidden md:flex items-center justify-center">
-              <div className="w-full aspect-square border border-[#e5e4de] relative overflow-hidden group">
-                <div className="absolute inset-0 bg-[#3d7068] opacity-5 group-hover:opacity-10 transition-opacity"></div>
-                <div className="absolute inset-10 border border-[#e5e4de] flex flex-col items-center justify-center text-center p-12">
-                  <iconify-icon icon="lucide:fingerprint" class="text-8xl opacity-10 mb-8"></iconify-icon>
-                  <span className="font-mono text-[10px] tracking-[0.4em] uppercase opacity-40">Verified Mechanism</span>
-                  <div className="h-px w-24 bg-[#1c1c1c] my-6 opacity-20"></div>
-                  <p className="font-serif italic text-xl">Trust is the new<br />encryption.</p>
-                </div>
-                <div className={styles.scanLine}></div>
-              </div>
+            <div className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-5">
+              {flow.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.number}
+                    onClick={() => setActiveFlow(i)}
+                    className={`group relative min-h-[250px] p-5 text-left transition-all ${activeFlow === i ? 'bg-[#1a211d]' : 'bg-[#121619] hover:bg-[#171c20]'}`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <span className="mono text-xs text-zinc-600">{item.number}</span>
+                      <Icon size={18} style={{ color: item.accent }} className="transition-transform group-hover:scale-110" />
+                    </div>
+                    <div className="mt-14">
+                      <div className="display text-lg font-medium" style={{ color: activeFlow === i ? item.accent : '#f4f6f6' }}>{item.title}</div>
+                      <p className="mt-3 text-xs leading-relaxed text-zinc-500">{item.copy}</p>
+                    </div>
+                    {activeFlow === i && <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ backgroundColor: item.accent }} />}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </section>
 
         {/* USE CASES */}
-        <section className="max-w-7xl mx-auto py-32 border-b border-[#e5e4de]">
-          <div className="px-6 text-center mb-16">
-            <WordReveal className="font-serif text-4xl uppercase font-light tracking-tight mb-8">Proven Across Industries</WordReveal>
-            <div className="flex flex-wrap justify-center gap-4">
-              {(['trade', 'weather', 'ip'] as TabId[]).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-6 py-2 rounded-full font-mono text-[10px] tracking-[0.2em] uppercase transition-all editorial-transition ${
-                    activeTab === tab ? 'bg-[#3d7068] text-white' : 'border border-[#e5e4de] opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  {tab === 'trade' ? 'Trade Finance' : tab === 'weather' ? 'Weather Derivatives' : 'IP Licensing'}
-                </button>
-              ))}
+        <section className="px-5 py-20 lg:px-10 lg:py-28">
+          <div className="mx-auto max-w-[1440px]">
+            <div className="flex flex-col justify-between gap-8 border-b border-white/10 pb-8 md:flex-row md:items-end">
+              <div>
+                <div className="label text-[#b4f56b]">02 / WHAT YOU CAN SECURE</div>
+                <h2 className="display mt-4 text-5xl leading-[.95] lg:text-7xl">Real-world conditions.<br /><span className="text-zinc-500">Guaranteed payouts.</span></h2>
+              </div>
+              <div className="flex max-w-xl flex-wrap gap-2">
+                {(Object.keys(useCases) as UseCase[]).map((item) => {
+                  const isLive = useCases[item].status === 'live';
+                  const isActive = activeUseCase === item;
+                  return (
+                    <button
+                      key={item}
+                      onClick={() => setActiveUseCase(item)}
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs transition-all ${
+                        !isLive
+                          ? isActive
+                            ? 'border-white/25 bg-white/[.08] text-zinc-300'
+                            : 'border-white/10 text-zinc-600 hover:border-white/25 hover:text-zinc-400'
+                          : isActive
+                            ? 'border-[#b4f56b] bg-[#b4f56b] text-[#0b0d10]'
+                            : 'border-white/15 text-zinc-500 hover:border-white/35 hover:text-zinc-200'
+                      }`}
+                    >
+                      {item}
+                      {!isLive && <span className="rounded-full border border-white/15 px-1.5 py-0.5 text-[8px] uppercase tracking-[.08em] text-zinc-500">Soon</span>}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-          <div className="max-w-5xl mx-auto px-6">
-            {activeTab === 'trade' && (
-              <div className={`${styles.tabContent} ${styles.tabContentActive} p-12 border border-[#e5e4de] bg-[#f7f6f2]/50`}>
-                <h3 className="font-serif text-3xl uppercase mb-6">Global Supply Chain Escrow</h3>
-                <p className="font-sans text-lg opacity-70 mb-8 leading-relaxed">Secure high-value international trade using automated document verification and IoT delivery tracking.</p>
-                <ul className="grid md:grid-cols-2 gap-4">
-                  {['Automatic Bill of Lading verification', 'Real-time currency hedging via FAssets', 'Zero-party dispute privacy', 'Multi-signatory approval flows'].map((li) => (
-                    <li key={li} className="flex items-center gap-3 font-mono text-xs opacity-60"><iconify-icon icon="lucide:check" class="text-[#3d7068]"></iconify-icon> {li}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {activeTab === 'weather' && (
-              <div className={`${styles.tabContent} ${styles.tabContentActive} p-12 border border-[#e5e4de] bg-[#f7f6f2]/50`}>
-                <h3 className="font-serif text-3xl uppercase mb-6">Parametric Climate Protection</h3>
-                <p className="font-sans text-lg opacity-70 mb-8 leading-relaxed">Instant payouts based on verifiable climate data points sourced from open oracles and satellite feeds.</p>
-                <ul className="grid md:grid-cols-2 gap-4">
-                  {['Open-Meteo API integration', 'Immediate threshold triggers', 'Transparent voting rounds', 'Low-latency FDC attestations'].map((li) => (
-                    <li key={li} className="flex items-center gap-3 font-mono text-xs opacity-60"><iconify-icon icon="lucide:check" class="text-[#3d7068]"></iconify-icon> {li}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {activeTab === 'ip' && (
-              <div className={`${styles.tabContent} ${styles.tabContentActive} p-12 border border-[#e5e4de] bg-[#f7f6f2]/50`}>
-                <h3 className="font-serif text-3xl uppercase mb-6">Digital Rights &amp; Licensing</h3>
-                <p className="font-sans text-lg opacity-70 mb-8 leading-relaxed">Streamline complex IP payouts and royalty distributions with cryptographic proof of use.</p>
-                <ul className="grid md:grid-cols-2 gap-4">
-                  {['Hash-based asset verification', 'Fractional royalty distribution', 'Automated licensing renewals', 'On-chain provenance tracking'].map((li) => (
-                    <li key={li} className="flex items-center gap-3 font-mono text-xs opacity-60"><iconify-icon icon="lucide:check" class="text-[#3d7068]"></iconify-icon> {li}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* TESTIMONIALS */}
-        <section className="max-w-7xl mx-auto py-32 border-b border-[#e5e4de]">
-          <div className="px-6 text-center mb-16">
-            <WordReveal className="font-serif text-4xl uppercase font-light tracking-tight">Trusted by Protocol Builders</WordReveal>
-          </div>
-          <div className="grid md:grid-cols-3 divide-x divide-[#e5e4de]">
-            {[
-              { quote: '"Automated conditions eliminated manual oversight, allowing our trade finance desks to scale 4x in a single quarter."', name: 'Alexander V.', role: 'CTO, Nexus Trade' },
-              { quote: '"FDC verification gave us the confidence to go live with our insurance vertical on Coston2 without a central oracle."', name: 'Sarah Chen', role: 'Lead Dev, FlareInsure' },
-              { quote: '"Dispute resolution that actually respects confidentiality. The TEE-based arbitration is a game changer for institutional users."', name: 'Marcus Thorne', role: 'Protocol Head, Arc Escrow' },
-            ].map((t) => (
-              <div key={t.name} className="p-12 editorial-transition card-editorial">
-                <p className="font-sans italic text-lg leading-relaxed mb-8 opacity-80">{t.quote}</p>
-                <div>
-                  <div className="font-mono text-[10px] tracking-[0.2em] uppercase mb-1">{t.name}</div>
-                  <div className="font-mono text-[10px] tracking-[0.2em] uppercase opacity-40">{t.role}</div>
+            <div className="mt-10 grid gap-10 lg:grid-cols-[.7fr_1.3fr] lg:items-center">
+              <div>
+                {currentCase.status !== 'live' && (
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.03] px-3 py-1 text-[10px] uppercase tracking-[.12em] text-zinc-400">
+                    Not built yet — roadmap item, not a live feature
+                  </div>
+                )}
+                <div className={`label ${currentCase.status === 'live' ? 'text-[#b4f56b]' : 'text-zinc-500'}`}>{currentCase.kicker}</div>
+                <h3 className={`display mt-5 max-w-xl text-4xl leading-[.98] lg:text-6xl ${currentCase.status === 'live' ? 'text-white' : 'text-zinc-400'}`}>{currentCase.title}</h3>
+                <p className="mt-6 max-w-md leading-relaxed text-zinc-500">{currentCase.copy}</p>
+                <div className="mt-10 flex items-end gap-10">
+                  <div>
+                    <div className={`mono text-3xl ${currentCase.status === 'live' ? 'text-white' : 'text-zinc-500'}`}>{currentCase.metric}</div>
+                    <div className="label mt-2">{currentCase.metricLabel}</div>
+                  </div>
+                  <div className="h-10 w-px bg-white/15" />
+                  <div>
+                    <div className={`text-xs ${currentCase.status === 'live' ? 'text-zinc-300' : 'text-zinc-500'}`}>{currentCase.chip}</div>
+                    <div className="label mt-2">{currentCase.status === 'live' ? 'Verified source' : 'Status'}</div>
+                  </div>
                 </div>
               </div>
-            ))}
+              <div>
+                {currentCase.visual === 'weather' ? <WeatherVisual /> : currentCase.visual === 'trade' ? <TradeVisual /> : <IpVisual />}
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* TECHNICAL FOUNDATIONS */}
-        <section className="max-w-7xl mx-auto py-32 border-b border-[#e5e4de]">
-          <div className="px-6 text-center mb-24">
-            <WordReveal className="font-serif text-4xl uppercase font-light tracking-tight">Technical Foundations</WordReveal>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-y-32 relative">
-            <div className="md:col-span-5 md:col-start-1 px-6">
-              <div className="w-12 h-12 border border-[#e5e4de] flex items-center justify-center mb-8">
-                <iconify-icon icon="lucide:cpu" class="text-2xl text-[#3d7068]"></iconify-icon>
-              </div>
-              <h3 className="font-serif text-3xl uppercase mb-6">Automated Conditions</h3>
-              <p className="font-sans opacity-70 leading-relaxed">Using the Flare Data Connector, escrow release can be pegged to real-world events like weather anomalies, shipping milestones, or market triggers with zero human intervention.</p>
+        {/* TRANSPARENCY */}
+        <section className="border-y border-white/10 bg-[#101417] px-5 py-20 lg:px-10">
+          <div className="mx-auto grid max-w-[1440px] gap-12 lg:grid-cols-[1fr_.9fr]">
+            <div>
+              <div className="label text-[#b4f56b]">03 / BUILT FOR TRANSPARENCY</div>
+              <h2 className="display mt-4 max-w-2xl text-5xl leading-[.94] text-white lg:text-7xl">Inspect every contract and payout.</h2>
+              <p className="mt-7 max-w-lg text-sm leading-relaxed text-zinc-500">
+                Warden hides nothing. Every smart contract, data verification, and payout transaction can be
+                inspected directly on the Coston2 explorer.
+              </p>
+              <Link to="/proof" className="mt-8 inline-flex items-center gap-2 text-sm text-[#b4f56b] hover:gap-4 transition-all">
+                Open transparency portal <ArrowRight size={15} />
+              </Link>
             </div>
-            <div className="md:col-span-5 md:col-start-8 px-6">
-              <div className="w-12 h-12 border border-[#e5e4de] flex items-center justify-center mb-8">
-                <iconify-icon icon="lucide:layers" class="text-2xl text-[#3d7068]"></iconify-icon>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-[#161b1d] p-5 sm:col-span-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#b4f56b]/10 text-[#b4f56b]">
+                      <ShieldCheck size={18} />
+                    </div>
+                    <div>
+                      <div className="text-sm text-white">Smart contract layer</div>
+                      <div className="label mt-1">COSTON2 / CHAIN 114</div>
+                    </div>
+                  </div>
+                  <ExternalLink size={15} className="text-zinc-600" />
+                </div>
+                <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4">
+                  <span className="mono text-[10px] text-zinc-500">0x12FeF54Aa967Cc921D8A42528B7ff23218911e14</span>
+                  <span className="text-[10px] text-[#b4f56b]">VERIFIED</span>
+                </div>
               </div>
-              <h3 className="font-serif text-3xl uppercase mb-6">Multi-Party Computation</h3>
-              <p className="font-sans opacity-70 leading-relaxed">Our MPC framework ensures that no single entity—not even the protocol operators—can access private evidence provided during dispute phases.</p>
-            </div>
-            <div className="hidden md:block absolute top-1/2 left-1/2 -translate-x-1/2 w-px h-full bg-[#e5e4de] opacity-30"></div>
-            <div className="md:col-span-5 md:col-start-1 px-6">
-              <div className="w-12 h-12 border border-[#e5e4de] flex items-center justify-center mb-8">
-                <iconify-icon icon="lucide:shield-check" class="text-2xl text-[#3d7068]"></iconify-icon>
+              <div className="rounded-2xl border border-white/10 bg-[#161b1d] p-5">
+                <div className="label">DISPUTE ENCLAVE</div>
+                <div className="mt-4 text-3xl text-white">ACTIVE</div>
+                <div className="mt-2 text-xs text-zinc-500">Secure hardware verification</div>
               </div>
-              <h3 className="font-serif text-3xl uppercase mb-6">TEE Verification</h3>
-              <p className="font-sans opacity-70 leading-relaxed">Dispute logic executes inside Trusted Execution Environments (TEEs), providing hardware-level assurance that code hasn't been tampered with.</p>
-            </div>
-            <div className="md:col-span-5 md:col-start-8 px-6">
-              <div className="w-12 h-12 border border-[#e5e4de] flex items-center justify-center mb-8">
-                <iconify-icon icon="lucide:droplets" class="text-2xl text-[#3d7068]"></iconify-icon>
+              <div className="rounded-2xl border border-white/10 bg-[#161b1d] p-5">
+                <div className="label">DATA FEED</div>
+                <div className="mt-4 mono text-3xl text-white">Live</div>
+                <div className="mt-2 text-xs text-zinc-500">Open-Meteo attested</div>
               </div>
-              <h3 className="font-serif text-3xl uppercase mb-6">FAssets Liquidity</h3>
-              <p className="font-sans opacity-70 leading-relaxed">Lock non-smart contract assets like XRP, BTC, and DOGE directly into escrows via the trustless FAssets bridging layer.</p>
             </div>
           </div>
         </section>
 
         {/* ROADMAP */}
-        <section className="max-w-7xl mx-auto py-32 border-b border-[#e5e4de]">
-          <div className="px-6 mb-24">
-            <WordReveal className="font-serif text-4xl uppercase font-light tracking-tight">Built for the Future</WordReveal>
-          </div>
-          <div className="max-w-4xl mx-auto px-6 relative">
-            <div className="absolute left-[30px] md:left-[35px] top-0 bottom-0 w-[2px] bg-[#3d7068] opacity-20"></div>
-            <div className="space-y-24">
-              {roadmap.map((item) => (
-                <RoadmapItem key={item.quarter} {...item} />
-              ))}
+        <section className="px-5 py-20 lg:px-10">
+          <div className="mx-auto max-w-[1440px]">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="label text-[#b4f56b]">04 / ROADMAP</div>
+                <h2 className="display mt-4 text-4xl text-white lg:text-6xl">What we are building next.</h2>
+              </div>
+              <div className="hidden items-center gap-2 text-xs text-zinc-600 md:flex">
+                <ArrowDownRight size={16} /> scroll to explore
+              </div>
+            </div>
+            <div className="relative mt-10">
+              <div className="mb-3 hidden items-center justify-end gap-2 md:flex">
+                <span className="mr-2 text-[10px] text-zinc-600">Navigate roadmap</span>
+                <button type="button" onClick={() => scrollRoadmap('left')} className="roadmap-nav-button" aria-label="Scroll roadmap left">
+                  <ArrowRight size={14} className="rotate-180" />
+                </button>
+                <button type="button" onClick={() => scrollRoadmap('right')} className="roadmap-nav-button" aria-label="Scroll roadmap right">
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+              <div ref={roadmapRef} className="roadmap-scroller flex snap-x gap-3 overflow-x-auto pb-3 pr-12 scroll-smooth">
+                <div className="min-w-[280px] snap-start rounded-2xl border border-[#b4f56b]/40 bg-[#b4f56b]/5 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-[#b4f56b]/70 hover:bg-[#1a211d] md:min-w-[350px]">
+                  <div className="flex items-center justify-between">
+                    <span className="label text-[#b4f56b]">NOW / LIVE</span>
+                    <span className="h-2 w-2 rounded-full bg-[#b4f56b] shadow-[0_0_12px_#b4f56b]" />
+                  </div>
+                  <div className="mt-16 text-2xl text-white">Coston2 testnet launch</div>
+                  <p className="mt-3 text-sm text-zinc-500">Live XRP bridging, data feeds, and automated escrow release.</p>
+                </div>
+                {[
+                  ['NEXT / 02', 'Partial split verdicts', 'Graduated payouts that handle partial dispute resolutions.'],
+                  ['NEXT / 03', 'More resolver types', 'Support for logistics, freight, and digital commerce milestones.'],
+                  ['NEXT / 04', 'Institutional workflows', 'Enhanced trade finance approvals and notarized documents.'],
+                  ['NEXT / 05', 'Multi-chain expansion', 'Expanding secure escrow release paths to other networks.'],
+                ].map(([k, t, c]) => (
+                  <div key={k} className="min-w-[280px] snap-start rounded-2xl border border-white/10 bg-[#121619] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-white/30 hover:bg-[#1a211d] md:min-w-[350px]">
+                    <div className="label">{k}</div>
+                    <div className="mt-16 text-2xl text-white">{t}</div>
+                    <p className="mt-3 text-sm text-zinc-500">{c}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* PROOF & TRANSPARENCY */}
-        <section className="max-w-7xl mx-auto py-32 border-b border-[#e5e4de]">
-          <div className="px-6 text-center mb-16">
-            <WordReveal className="font-serif text-4xl uppercase font-light tracking-tight">Verifiable by Design</WordReveal>
-          </div>
-          <div className="grid md:grid-cols-3 divide-x divide-[#e5e4de]">
-            <Link to="/proof" id="proof-contracts" className="p-12 text-center editorial-transition card-editorial group">
-              <div className="w-16 h-16 border border-[#e5e4de] mx-auto flex items-center justify-center mb-8">
-                <iconify-icon icon="lucide:file-code" class="text-3xl opacity-40 group-hover:text-[#3d7068] group-hover:opacity-100 transition-all"></iconify-icon>
-              </div>
-              <h3 className="font-serif text-xl uppercase mb-4">Smart Contracts</h3>
-              <div className="font-mono text-[10px] tracking-[0.2em] uppercase opacity-60 group-hover:opacity-100 flex items-center justify-center gap-2">
-                View Source <iconify-icon icon="lucide:external-link"></iconify-icon>
-              </div>
-            </Link>
-            <Link to="/proof" id="proof-blockchain" className="p-12 text-center editorial-transition card-editorial group">
-              <div className="w-16 h-16 border border-[#e5e4de] mx-auto flex items-center justify-center mb-8">
-                <iconify-icon icon="lucide:database" class="text-3xl opacity-40 group-hover:text-[#3d7068] group-hover:opacity-100 transition-all"></iconify-icon>
-              </div>
-              <h3 className="font-serif text-xl uppercase mb-4">Blockchain Proof</h3>
-              <div className="font-mono text-[10px] tracking-[0.2em] uppercase opacity-60 group-hover:opacity-100 flex items-center justify-center gap-2">
-                Coston2 Explorer <iconify-icon icon="lucide:external-link"></iconify-icon>
-              </div>
-            </Link>
-            <Link to="/proof" id="proof-tee" className="p-12 text-center editorial-transition card-editorial group">
-              <div className="w-16 h-16 border border-[#e5e4de] mx-auto flex items-center justify-center mb-8">
-                <iconify-icon icon="lucide:box" class="text-3xl opacity-40 group-hover:text-[#3d7068] group-hover:opacity-100 transition-all"></iconify-icon>
-              </div>
-              <h3 className="font-serif text-xl uppercase mb-4">TEE Verification</h3>
-              <div className="font-mono text-[10px] tracking-[0.2em] uppercase opacity-60 group-hover:opacity-100 flex items-center justify-center gap-2">
-                FlareTeeManager <iconify-icon icon="lucide:external-link"></iconify-icon>
-              </div>
+        {/* FINAL CTA */}
+        <section className="border-t border-white/10 px-5 py-16 lg:px-10">
+          <div className="mx-auto flex max-w-[1440px] flex-col gap-8 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="label text-[#b4f56b]">READY TO START</div>
+              <h2 className="display mt-4 max-w-3xl text-5xl leading-[.95] text-white lg:text-7xl">Create your first<br /><span className="text-zinc-500">trustless escrow.</span></h2>
+            </div>
+            <Link to="/connect" className="group inline-flex shrink-0 items-center gap-4 rounded-full bg-[#b4f56b] px-5 py-3 text-sm font-semibold text-[#0b0d10] transition-all hover:gap-6 active:scale-[.97]">
+              Fund an escrow <ArrowRight size={16} />
             </Link>
           </div>
         </section>
 
-        {/* FINAL CTA */}
-        <section className="max-w-7xl mx-auto py-48 text-center">
-          <div className="max-w-4xl mx-auto px-6">
-            <WordReveal className="font-serif text-[6vw] leading-[1] uppercase font-light tracking-tighter mb-8">
-              Ready to Build Trustless Escrow?
-            </WordReveal>
-            <p className="font-sans text-xl opacity-70 mb-16 max-w-2xl mx-auto">Join hundreds of developers securing high-value transactions with the world's first editorial-grade autonomous escrow protocol.</p>
-            <Link to="/connect" id="final-cta" className="cta-button px-16 py-8 text-white font-mono text-xs tracking-[0.3em] uppercase rounded-[2px] inline-flex items-center gap-4 group">
-              Get Started Now
-              <iconify-icon icon="lucide:chevron-right" class="group-hover:translate-x-1 transition-transform"></iconify-icon>
-            </Link>
+        {/* VERIFIED RAILS */}
+        <section className="border-t border-white/10 bg-[#0e1114] px-5 py-16 lg:px-10">
+          <div className="mx-auto max-w-[1440px]">
+            <div className="flex flex-col justify-between gap-6 border-b border-white/10 pb-8 md:flex-row md:items-end">
+              <div>
+                <div className="label text-[#b4f56b]">05 / VERIFIED RAILS</div>
+                <h2 className="display mt-3 text-4xl text-white lg:text-5xl">Powered by proven infrastructure.</h2>
+              </div>
+              <p className="max-w-md text-sm leading-relaxed text-zinc-500">
+                Warden is built on secure, battle-tested protocols. Click any rail below to explore official
+                documentation and code.
+              </p>
+            </div>
+            <div className="mt-7 grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-5">
+              {[
+                ['FLARE', 'NETWORK', 'https://flare.network/'],
+                ['FDC', 'DATA FEEDS', 'https://dev.flare.network/'],
+                ['FASSETS', 'BRIDGE', 'https://dev.flare.network/fassets/'],
+                ['XRPL', 'SETTLEMENT', 'https://xrpl.org/'],
+                ['COSTON2', 'EXPLORER', 'https://coston2-explorer.flare.network/'],
+              ].map(([name, role, href]) => (
+                <a key={name} href={href} target="_blank" rel="noreferrer" className="group bg-[#121619] p-5 transition-colors hover:bg-[#1a211d]">
+                  <div className="flex items-center justify-between">
+                    <span className="display text-lg text-zinc-300 transition-colors group-hover:text-[#b4f56b]">{name}</span>
+                    <ArrowUpRight size={14} className="text-zinc-700 transition-colors group-hover:text-[#b4f56b]" />
+                  </div>
+                  <div className="label mt-7">{role}</div>
+                  <div className="mt-3 flex items-center gap-2 text-[10px] text-zinc-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#b4f56b]" />OFFICIAL DOCS
+                  </div>
+                </a>
+              ))}
+            </div>
           </div>
         </section>
       </main>

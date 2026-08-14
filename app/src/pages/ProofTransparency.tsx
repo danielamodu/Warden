@@ -1,27 +1,30 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Code2, ExternalLink, LockKeyhole, ServerCog } from 'lucide-react';
 import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 import BackgroundGrid from '../components/BackgroundGrid';
-import WordReveal from '../components/WordReveal';
 import { escrowService } from '../services';
 import { useDispute } from '../hooks/useDispute';
 import { useEscrowData } from '../hooks/useEscrowData';
 import { copyToClipboard, truncateMiddle } from '../utils/format';
 import type { ContractInfo } from '../types';
-import styles from './ProofTransparency.module.css';
 
-function CopyButton({ text }: { text: string }) {
+function CopyAddress({ address }: { address: string }) {
   return (
-    <button className={`${styles.copyBtn} text-[#1c1c1c] hover:text-[#3d7068]`} onClick={() => copyToClipboard(text)}>
-      <iconify-icon icon="lucide:copy"></iconify-icon>
-      <span className={`${styles.tooltip} uppercase`}>Copy Address</span>
+    <button onClick={(e) => { e.stopPropagation(); copyToClipboard(address); }} className="rounded-lg border border-white/10 p-2 text-zinc-500 hover:border-white/30 hover:text-white" title="Copy address">
+      <span className="sr-only">Copy</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
     </button>
   );
 }
 
+/** Direct port of the Manus redesign's Proof.tsx — same layout, colors, and
+ * card system — with every hardcoded array swapped for this app's real
+ * IEscrowService/useDispute/useEscrowData calls. */
 export default function ProofTransparency() {
   const [contracts, setContracts] = useState<ContractInfo[]>([]);
+  const [active, setActive] = useState(0);
   const { dispute } = useDispute('phase3');
   const { escrow: phase2Escrow } = useEscrowData('phase2');
 
@@ -29,159 +32,162 @@ export default function ProofTransparency() {
     escrowService.listContracts().then(setContracts);
   }, []);
 
+  const selected = contracts[active];
+
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative bg-[#0b0d10] text-zinc-100">
       <BackgroundGrid />
       <NavBar activeItem="docs" />
 
-      <main className="pt-48 pb-32">
-        <section className="max-w-7xl mx-auto px-6 mb-24 border-b border-[#e5e4de] pb-24">
-          <div className="inline-flex items-center mb-8 px-4 py-1 border border-[#3d7068] rounded-full">
-            <span className={`${styles.pulseBadge} font-mono text-[9px] tracking-[0.2em] uppercase text-[#3d7068]`}>Protocol Transparency</span>
+      <main className="relative z-10 px-5 py-10 lg:px-10 lg:py-16">
+        <div className="mx-auto max-w-[1440px]">
+          <div className="grid gap-12 border-b border-white/10 pb-14 lg:grid-cols-[1.1fr_.9fr] lg:items-end">
+            <div>
+              <div className="label text-[#b4f56b]">TRANSPARENCY PORTAL</div>
+              <h1 className="display mt-5 max-w-4xl text-6xl leading-[.88] text-white lg:text-[7.4rem]">Verifiable<br /><span className="text-zinc-500">by code.</span></h1>
+            </div>
+            <div>
+              <p className="max-w-md text-base leading-relaxed text-zinc-400">
+                Inspect every smart contract, verification round, and payout rule directly. Trust is proven on-chain, never assumed.
+              </p>
+              <div className="mt-7 flex items-center gap-3 text-xs text-[#b4f56b]"><span className="h-px w-10 bg-[#b4f56b]" /> Coston2 testnet / Chain 114</div>
+            </div>
           </div>
-          <WordReveal as="h1" className="font-serif text-[6vw] leading-[1] uppercase font-light tracking-tighter mb-8">
-            Verifiable by Design
-          </WordReveal>
-          <p className="max-w-2xl font-sans text-xl opacity-70 leading-relaxed">
-            Complete transparency into every contract, TEE environment, and on-chain proof. Trust is verified, not assumed.
-          </p>
-        </section>
 
-        <section className="max-w-7xl mx-auto grid md:grid-cols-3 divide-x divide-[#e5e4de] border-b border-[#e5e4de]">
-          {/* SMART CONTRACTS */}
-          <div className="p-8 space-y-12">
-            <WordReveal as="div" className="font-serif text-2xl uppercase font-light mb-8">Smart Contracts</WordReveal>
-            <div className="space-y-6">
-              {contracts.map((c) => (
-                <div key={c.address} className={`${styles.cardEditorial} border border-[#e5e4de] p-5`}>
-                  <span className="font-mono text-[10px] tracking-[0.2em] uppercase opacity-60 block mb-2">{c.label}</span>
-                  <p className="font-sans text-xs mb-4 opacity-70">{c.description}</p>
-                  <div className={`${styles.addressBlock} p-3 rounded-[2px] flex items-center justify-between mb-4`}>
-                    <code className="font-mono text-[11px] break-all select-all pr-4">{c.address}</code>
-                    <CopyButton text={c.address} />
+          <div className="mt-12 grid gap-4 lg:grid-cols-[1.05fr_.95fr]">
+            <div className="rounded-2xl border border-[#72d7ff]/30 bg-[#72d7ff]/[.05] p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#72d7ff]/10 text-[#72d7ff]"><ServerCog size={17} /></span>
+                  <div><div className="text-sm text-white">Weather data feed</div><div className="label mt-1">LIVE / OPEN-METEO</div></div>
+                </div>
+                <span className="rounded-full border border-[#72d7ff]/30 bg-[#72d7ff]/10 px-2 py-1 text-[9px] text-[#72d7ff]">SYNCED</span>
+              </div>
+              <div className="mt-8 flex items-end justify-between">
+                <div>
+                  <div className="mono text-4xl tracking-[-.06em] text-white">#{phase2Escrow?.fdc?.votingRoundId ?? '…'}</div>
+                  <div className="mt-2 text-xs text-zinc-500">verified weather check</div>
+                </div>
+                <div className="text-right">
+                  <div className="mono text-2xl text-[#72d7ff]">{phase2Escrow?.condition.type === 'weather' ? `${phase2Escrow.condition.currentC ?? '…'}°C` : '…'}</div>
+                  <div className="label mt-1">live reading</div>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-[#d5a5ff]/30 bg-[#d5a5ff]/[.05] p-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#d5a5ff]/10 text-[#d5a5ff]"><ServerCog size={17} /></span>
+                  <div><div className="text-sm text-white">Secure enclave manager</div><div className="label mt-1">AUTOMATED</div></div>
+                </div>
+                <span className="rounded-full border border-[#b4f56b]/30 bg-[#b4f56b]/10 px-2 py-1 text-[9px] text-[#b4f56b]">{dispute?.teeStatus ?? 'LOADING'}</span>
+              </div>
+              <div className="mt-8 grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-white/10 bg-[#0d1013]/60 p-3">
+                  <div className="label">ENCLAVE ID</div>
+                  <div className="mt-3 mono truncate text-sm text-zinc-300" title={dispute?.teeId}>{dispute ? truncateMiddle(dispute.teeId) : '…'}</div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-[#0d1013]/60 p-3">
+                  <div className="label">EXTENSION</div>
+                  <div className="mt-3 mono text-sm text-zinc-300">#{dispute?.extensionId ?? '…'}</div>
+                </div>
+              </div>
+              <div className="mt-5 flex items-center gap-2 text-xs text-zinc-500"><LockKeyhole size={13} className="text-[#d5a5ff]" /> Evidence is fully encrypted before review.</div>
+            </div>
+          </div>
+
+          <div className="mt-16">
+            <div className="flex flex-col justify-between gap-6 border-b border-white/10 pb-6 md:flex-row md:items-end">
+              <div><div className="label text-[#b4f56b]">CONTRACT REGISTRY</div><h2 className="display mt-3 text-4xl text-white lg:text-6xl">Source addresses.</h2></div>
+              <a href="https://coston2-explorer.flare.network/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs text-zinc-500 hover:text-[#72d7ff]">
+                Open Coston2 explorer <ExternalLink size={13} />
+              </a>
+            </div>
+            <div className="mt-8 grid gap-3 lg:grid-cols-2">
+              {contracts.map((item, i) => (
+                <div
+                  key={item.address}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setActive(i)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActive(i); }}
+                  className={`cursor-pointer rounded-2xl border p-5 text-left transition-all ${active === i ? 'border-white/30 bg-white/[.06]' : 'border-white/10 bg-[#111518] hover:border-white/20'}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#b4f56b]/10 text-[#b4f56b]"><Code2 size={17} /></span>
+                      <div><div className="text-sm text-white">{item.label}</div><div className="label mt-1">{item.description}</div></div>
+                    </div>
+                    <span className="flex items-center gap-1.5 text-[9px] text-[#b4f56b]"><span className="h-1.5 w-1.5 rounded-full bg-[#b4f56b]" />VERIFIED</span>
                   </div>
-                  <a href={c.explorerUrl} target="_blank" rel="noreferrer" className="font-mono text-[10px] tracking-[0.2em] uppercase text-[#3d7068] flex items-center gap-2 hover:underline">
-                    View on Explorer <iconify-icon icon="lucide:external-link"></iconify-icon>
-                  </a>
+                  <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-white/8 bg-[#0d1013] p-3">
+                    <span className="mono truncate text-[10px] text-zinc-400">{item.address}</span>
+                    <CopyAddress address={item.address} />
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* FLARE TEE MANAGER */}
-          <div className="p-8 space-y-12">
-            <WordReveal as="div" className="font-serif text-2xl uppercase font-light mb-8">Flare TEE Manager</WordReveal>
-            <div className={`${styles.cardEditorial} border border-[#e5e4de] p-6 h-full`}>
-              <div className="flex items-center justify-between mb-10">
-                <span className="bg-[#3d7068] text-white font-mono text-[9px] px-3 py-1 rounded-[2px] uppercase tracking-[0.2em]">{dispute?.teeStatus ?? 'Loading…'}</span>
-                <iconify-icon icon="lucide:cpu" class="text-2xl text-[#3d7068]"></iconify-icon>
-              </div>
-              <div className="space-y-10">
-                <div className="space-y-3">
-                  <span className="font-mono text-[10px] uppercase opacity-40 tracking-[0.2em]">TEE Manager Address</span>
-                  <div className={`${styles.addressBlock} p-3 rounded-[2px] flex items-center justify-between`}>
-                    <code className="font-mono text-[11px] select-all">{dispute?.teeManagerAddress ?? '…'}</code>
-                    {dispute && <CopyButton text={dispute.teeManagerAddress} />}
-                  </div>
+          {selected && (
+            <div className="mt-10 grid gap-4 lg:grid-cols-[1fr_1.15fr]">
+              <div className="rounded-2xl border border-white/10 bg-[#111518] p-5">
+                <div className="flex items-center justify-between"><div className="label">SELECTED CONTRACT</div><span className="h-2 w-2 rounded-full bg-[#b4f56b]" /></div>
+                <h3 className="display mt-5 text-3xl text-white">{selected.label}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-zinc-500">{selected.description}</p>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-center justify-between border-t border-white/10 pt-4 text-xs"><span className="text-zinc-600">network</span><span className="mono text-zinc-300">Coston2 / 114</span></div>
+                  <div className="flex items-center justify-between border-t border-white/10 pt-4 text-xs"><span className="text-zinc-600">address</span><span className="mono max-w-[210px] truncate text-zinc-300">{selected.address}</span></div>
                 </div>
-                <div className="space-y-3">
-                  <span className="font-mono text-[10px] uppercase opacity-40 tracking-[0.2em]">TEE ID (live)</span>
-                  <div className={`${styles.addressBlock} p-3 rounded-[2px] flex items-center justify-between`}>
-                    <code className="font-mono text-[11px] select-all">{dispute?.teeId ?? '…'}</code>
-                    {dispute && <CopyButton text={dispute.teeId} />}
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <span className="font-mono text-[10px] uppercase opacity-40 tracking-[0.2em]">InstructionSender Extension</span>
-                  <div className={`${styles.addressBlock} p-3 rounded-[2px] flex items-center justify-between`}>
-                    <code className="font-mono text-[11px] select-all">{dispute?.instructionSenderAddress ?? '…'}</code>
-                    {dispute && <CopyButton text={dispute.instructionSenderAddress} />}
-                  </div>
-                  <span className="font-mono text-[9px] uppercase opacity-30">Extension ID: {dispute?.extensionId ?? '…'}</span>
-                </div>
-                <div className="space-y-3">
-                  <span className="font-mono text-[10px] uppercase opacity-40 tracking-[0.2em]">RULE_ON_EVIDENCE Instruction Tx</span>
-                  <div className={`${styles.addressBlock} p-3 rounded-[2px] flex items-center justify-between border-l-2 border-[#3d7068]`}>
-                    <code className="font-mono text-[11px] break-all select-all pr-4">{dispute?.instructionTxHash ?? '…'}</code>
-                    {dispute && <CopyButton text={dispute.instructionTxHash} />}
-                  </div>
-                  <div className="flex items-center gap-2 font-mono text-[9px] text-[#3d7068] uppercase tracking-[0.2em]">
-                    <iconify-icon icon="lucide:check-circle"></iconify-icon> Verified Instruction
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ON-CHAIN VERIFICATION */}
-          <div className="p-8 space-y-12">
-            <WordReveal as="div" className="font-serif text-2xl uppercase font-light mb-8">On-Chain Verification</WordReveal>
-            <div className="space-y-6">
-              <div className={`${styles.cardEditorial} border border-[#e5e4de] p-6 flex flex-col items-center text-center group`}>
-                <div className="w-14 h-14 border border-[#e5e4de] flex items-center justify-center mb-6 opacity-40 group-hover:opacity-100 group-hover:border-[#3d7068] transition-all">
-                  <iconify-icon icon="lucide:database" class="text-2xl"></iconify-icon>
-                </div>
-                <h4 className="font-mono text-xs uppercase mb-3 tracking-[0.1em]">Coston2 Explorer</h4>
-                <a href="https://coston2-explorer.flare.network/" target="_blank" rel="noreferrer" className="font-mono text-[10px] tracking-[0.2em] uppercase text-[#3d7068] flex items-center gap-2 hover:underline">
-                  View All Transactions <iconify-icon icon="lucide:external-link"></iconify-icon>
+                <a href={selected.explorerUrl} target="_blank" rel="noreferrer" className="mt-8 flex items-center justify-between rounded-xl bg-white/[.06] px-4 py-3 text-sm text-zinc-200 transition-colors hover:bg-white/10">
+                  <span>View on explorer</span><ExternalLink size={15} />
                 </a>
               </div>
-              <div className={`${styles.cardEditorial} border border-[#e5e4de] p-6 flex flex-col items-center text-center group`}>
-                <div className="w-14 h-14 border border-[#e5e4de] flex items-center justify-center mb-6 opacity-40 group-hover:opacity-100 group-hover:border-[#3d7068] transition-all">
-                  <iconify-icon icon="lucide:check-circle" class="text-2xl"></iconify-icon>
+              <div className="rounded-2xl border border-white/10 bg-[#111518] p-5">
+                <div className="label mb-6">LIVE DISPUTE RECORD (PHASE 3)</div>
+                <div className="space-y-4 font-mono text-xs">
+                  <div className="flex justify-between border-b border-white/8 pb-3"><span className="text-zinc-600">case ref</span><span className="text-zinc-300">{dispute?.caseRef ?? '…'}</span></div>
+                  <div className="flex justify-between border-b border-white/8 pb-3"><span className="text-zinc-600">instruction sender</span><span className="truncate text-zinc-300" title={dispute?.instructionSenderAddress}>{dispute ? truncateMiddle(dispute.instructionSenderAddress) : '…'}</span></div>
+                  <div className="flex justify-between border-b border-white/8 pb-3"><span className="text-zinc-600">instruction tx</span><span className="truncate text-[#8af5d1]" title={dispute?.instructionTxHash}>{dispute ? truncateMiddle(dispute.instructionTxHash) : '…'}</span></div>
+                  <div className="flex justify-between"><span className="text-zinc-600">status</span><span className="text-[#b4f56b]">{dispute?.status ?? '…'}</span></div>
                 </div>
-                <h4 className="font-mono text-xs uppercase mb-1 tracking-[0.1em]">Live Voting Rounds</h4>
-                <span className="font-mono text-[9px] opacity-40 uppercase block mb-3">
-                  Phase 2 FDC Round: {phase2Escrow?.fdc?.votingRoundId ?? '…'}
-                </span>
-                <p className="font-sans text-[11px] opacity-60 mb-4 px-4">Round with the exact-value Web2Json weather attestation match.</p>
-                {phase2Escrow?.txs.fundTxHash && (
-                  <a
-                    href={`https://coston2-explorer.flare.network/tx/${phase2Escrow.txs.fundTxHash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono text-[10px] tracking-[0.2em] uppercase text-[#3d7068] flex items-center gap-2 hover:underline"
-                  >
-                    View Fund Tx <iconify-icon icon="lucide:external-link"></iconify-icon>
-                  </a>
-                )}
-              </div>
-              <div className={`${styles.cardEditorial} border border-[#e5e4de] p-6 flex flex-col items-center text-center group`}>
-                <div className="w-14 h-14 border border-[#e5e4de] flex items-center justify-center mb-6 opacity-40 group-hover:opacity-100 group-hover:border-[#3d7068] transition-all">
-                  <iconify-icon icon="lucide:link-2" class="text-2xl"></iconify-icon>
-                </div>
-                <h4 className="font-mono text-xs uppercase mb-3 tracking-[0.1em]">Cross-Chain Proofs</h4>
-                <p className="font-sans text-[11px] opacity-60 mb-4 px-4">Trustless bridging via FAssets redemption flows.</p>
-                {phase2Escrow?.txs.payoutXrplTxHash && (
-                  <a
-                    href={`https://testnet.xrpl.org/transactions/${phase2Escrow.txs.payoutXrplTxHash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-mono text-[10px] tracking-[0.2em] uppercase text-[#3d7068] flex items-center gap-2 hover:underline"
-                  >
-                    Verification Details <iconify-icon icon="lucide:external-link"></iconify-icon>
-                  </a>
-                )}
               </div>
             </div>
-          </div>
-        </section>
+          )}
 
-        <section className="max-w-7xl mx-auto py-24 px-6 text-center border-b border-[#e5e4de]">
-          <WordReveal as="h2" className="font-serif text-4xl uppercase font-light tracking-tight mb-8">Technical Audit Logs</WordReveal>
-          <div className="max-w-4xl mx-auto p-12 border border-[#e5e4de] bg-white/30">
-            <div className="flex flex-col items-center gap-6">
-              <iconify-icon icon="lucide:file-text" class="text-5xl opacity-20"></iconify-icon>
-              <p className="font-sans text-lg opacity-60">
-                Comprehensive transaction history and attestation proofs are generated for every escrow release. Protocol performance and TEE uptime can be audited by any party using the instruction sender extension.
-              </p>
-              <div className="flex gap-6">
-                <Link to="/create" className="font-mono text-[10px] tracking-[0.3em] uppercase bg-[#3d7068] text-white px-8 py-3 hover:opacity-90 editorial-transition">Create Escrow</Link>
-                <Link to="/dashboard" className="font-mono text-[10px] tracking-[0.3em] uppercase border border-[#1c1c1c] px-8 py-3 hover:bg-[#1c1c1c] hover:text-white editorial-transition">Dashboard</Link>
+          <div className="mt-16 rounded-2xl border border-white/10 bg-[#101417] p-6 lg:p-8">
+            <div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
+              <div>
+                <div className="label text-[#b4f56b]">TRUST MODEL</div>
+                <h2 className="display mt-4 text-4xl text-white lg:text-6xl">No middlemen.<br /><span className="text-zinc-500">Just code and math.</span></h2>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { n: '01', sub: 'Flare Data Connector', c: 'Flare Data Connector checks real-world facts.' },
+                  { n: '02', sub: 'Secure TEE hardware', c: 'Secure hardware confirms dispute rulings.' },
+                  { n: '03', sub: 'Automated Payout', c: 'Smart contracts release funds instantly.' },
+                ].map((item) => (
+                  <div key={item.n} className="rounded-xl border border-white/10 bg-[#151a1e] p-4">
+                    <div className="mono text-xs text-[#b4f56b]">{item.n}</div>
+                    <div className="mt-10 text-sm text-white">{item.sub}</div>
+                    <p className="mt-2 text-xs leading-relaxed text-zinc-600">{item.c}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        </section>
+
+          <div className="mt-16 flex flex-col items-center gap-6 rounded-2xl border border-white/10 bg-white/[.02] p-12 text-center">
+            <p className="max-w-2xl text-lg text-zinc-400">
+              Comprehensive transaction history and attestation proofs are generated for every escrow release.
+              Protocol performance and TEE uptime can be audited by any party using the instruction sender extension.
+            </p>
+            <div className="flex gap-4">
+              <Link to="/create" className="rounded-full bg-[#b4f56b] px-6 py-3 text-xs font-semibold uppercase tracking-[0.15em] text-[#0b0d10]">Create Escrow</Link>
+              <Link to="/dashboard" className="rounded-full border border-white/15 px-6 py-3 text-xs uppercase tracking-[0.15em] text-zinc-300 hover:border-white/40 hover:text-white">Dashboard</Link>
+            </div>
+          </div>
+        </div>
       </main>
 
       <Footer />

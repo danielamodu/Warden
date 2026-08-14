@@ -57,7 +57,7 @@ export const INSTRUCTION_SENDER_ABI = ['function sendRuleOnEvidence(bytes) payab
 // emitted here (not by the InstructionSender itself) whenever any
 // InstructionSender routes an instruction through sendInstructions().
 export const TEE_VERIFICATION_ABI = [
-  'event TeeInstructionsSent(bytes32 indexed instructionId, uint32 indexed rewardEpochId, tuple(address teeId, address teeProxyId, string url)[] teeMachines, bytes32 opType, bytes32 opCommand, bytes message, address[] cosigners, uint64 cosignersThreshold, address claimBackAddress, uint256 fee)',
+  'event TeeInstructionsSent(uint256 indexed extensionId, bytes32 indexed instructionId, uint32 indexed rewardEpochId, tuple(address teeId, address teeProxyId, string url)[] teeMachines, bytes32 opType, bytes32 opCommand, bytes message, address[] cosigners, uint64 cosignersThreshold, address claimBackAddress, uint256 fee)',
 ];
 
 // TeeStatus enum ordinal -> label. Only ordinal 2 = PRODUCTION is confirmed

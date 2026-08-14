@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, Copy } from 'lucide-react';
 import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 import BackgroundGrid from '../components/BackgroundGrid';
-import WordReveal from '../components/WordReveal';
 import { useEscrowData } from '../hooks/useEscrowData';
 import { copyToClipboard } from '../utils/format';
 import { EXPLORER } from '../services/RealEscrowService';
 import { findXrplPayoutTx, getXrplBalanceXrp } from '../chain/xrpl';
-import styles from './PayoutSuccess.module.css';
 
 interface LivePayout {
   amount: number;
@@ -20,6 +19,10 @@ interface LivePayout {
 const XRPL_POLL_INTERVAL_MS = 5000;
 const XRPL_POLL_MAX_ATTEMPTS = 40; // ~200s, mirrors 06-monitor-xrpl-payout.mjs's window
 
+/**
+ * No Manus design exists for this screen — extrapolated from the dark/lime
+ * system's success-state treatment (lime badge + rounded transaction rows).
+ */
 export default function PayoutSuccess() {
   const { id = 'phase2' } = useParams<{ id: string }>();
   const { escrow, loading } = useEscrowData(id);
@@ -28,11 +31,6 @@ export default function PayoutSuccess() {
   const [xrplNote, setXrplNote] = useState<string | null>(null);
   const [xrplPolling, setXrplPolling] = useState(false);
 
-  // Live-poll XRPL testnet for the actual delivered payment, same pattern
-  // (and same meta.delivered_amount gotcha) as
-  // scripts/phase3/06-monitor-xrpl-payout.mjs — resolves immediately for
-  // already-settled historical escrows (the payment is already the most
-  // recent one), and genuinely polls for a freshly-resolved dispute.
   useEffect(() => {
     if (!escrow || escrow.status !== 'released' || !escrow.beneficiaryXrplAddress) return;
     let cancelled = false;
@@ -75,107 +73,83 @@ export default function PayoutSuccess() {
   const displayAsset = livePayout ? 'XRP' : escrow?.payout?.asset;
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative bg-[#0b0d10] text-zinc-100">
       <BackgroundGrid />
       <NavBar activeItem="payout" />
 
-      <main className="pt-32 pb-20">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col items-center mb-10">
-            <div className={`${styles.successBadge} w-20 h-20 bg-[#3d7068] rounded-full flex items-center justify-center mb-8`}>
-              <iconify-icon icon="lucide:check-circle" class="text-4xl text-white"></iconify-icon>
+      <main className="relative z-10 px-5 py-10 lg:px-10 lg:py-16">
+        <div className="mx-auto max-w-[1440px]">
+          <div className="mb-10 flex flex-col items-center text-center">
+            <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-full bg-[#b4f56b]">
+              <CheckCircle2 size={40} className="text-[#0b0d10]" />
             </div>
-            <WordReveal as="h1" className="font-serif text-5xl md:text-6xl uppercase font-light tracking-tighter text-center">
-              Escrow Released Successfully
-            </WordReveal>
+            <h1 className="display text-5xl leading-[.95] text-white lg:text-6xl">Escrow released successfully.</h1>
           </div>
 
           {loading || !escrow ? (
-            <div className="text-center font-mono text-xs opacity-40 uppercase tracking-widest py-12">Loading payout…</div>
+            <div className="py-16 text-center font-mono text-xs uppercase tracking-widest text-zinc-500">Loading payout…</div>
           ) : (
             <>
-              <div className="grid md:grid-cols-2 gap-px bg-[#e5e4de] border border-[#e5e4de] mb-px">
-                <div className={`${styles.cardEditorial} bg-[#f7f6f2] p-10`}>
-                  <div className="font-mono text-[10px] tracking-[0.3em] uppercase opacity-40 mb-4">Amount Received</div>
-                  <div className="font-mono text-2xl text-[#3d7068] mb-2">{displayAmount} {displayAsset}</div>
-                  <div className="inline-block bg-[#3d7068]/10 text-[#3d7068] font-mono text-[10px] tracking-[0.2em] uppercase px-3 py-1 rounded-[2px]">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-[#111518] p-8">
+                  <div className="label mb-4">AMOUNT RECEIVED</div>
+                  <div className="mono text-2xl text-[#b4f56b]">{displayAmount} {displayAsset}</div>
+                  <div className="mt-4 inline-block rounded-full bg-[#b4f56b]/10 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#b4f56b]">
                     {livePayout ? 'Success (live XRPL)' : xrplPolling ? 'Polling XRPL…' : xrplNote ? 'Pending' : 'Success'}
                   </div>
                 </div>
-                <div className={`${styles.cardEditorial} bg-[#f7f6f2] p-10`}>
-                  <div className="font-mono text-[10px] tracking-[0.3em] uppercase opacity-40 mb-4">Wallet Balance Update</div>
-                  <div className="flex items-center gap-6 font-mono">
-                    <div className="text-lg opacity-60">{livePayout ? livePayout.balanceBefore.toFixed(2) : '…'} XRP</div>
-                    <iconify-icon icon="lucide:arrow-right" class="text-xl opacity-20"></iconify-icon>
-                    <div className="text-lg text-[#3d7068]">{livePayout ? livePayout.balanceAfter.toFixed(2) : '…'} XRP</div>
+                <div className="rounded-2xl border border-white/10 bg-[#111518] p-8">
+                  <div className="label mb-4">WALLET BALANCE UPDATE</div>
+                  <div className="mono flex items-center gap-4 text-lg">
+                    <span className="text-zinc-500">{livePayout ? livePayout.balanceBefore.toFixed(2) : '…'} XRP</span>
+                    <ArrowRight size={18} className="text-zinc-700" />
+                    <span className="text-[#b4f56b]">{livePayout ? livePayout.balanceAfter.toFixed(2) : '…'} XRP</span>
                   </div>
-                  {xrplNote && <p className="mt-4 font-mono text-[9px] opacity-50 uppercase tracking-wide">{xrplNote}</p>}
+                  {xrplNote && <p className="mt-4 text-[10px] uppercase tracking-wide text-zinc-600">{xrplNote}</p>}
                 </div>
               </div>
 
-              <div className={`${styles.cardEditorial} border border-[#e5e4de] p-10`}>
-                <h2 className="font-serif text-2xl uppercase font-light mb-8">Transaction Details</h2>
-                <div className="space-y-0">
+              <div className="mt-4 rounded-2xl border border-white/10 bg-[#111518] p-8">
+                <h2 className="display mb-6 text-2xl text-white">Transaction Details</h2>
+                <div>
                   {resolverTx && (
-                    <div className="py-6 border-b border-[#e5e4de] flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="font-mono text-[10px] tracking-[0.3em] uppercase opacity-40">
-                        {escrow.txs.releaseTxHash ? 'Resolver Transaction' : 'Verdict Transaction'}
-                      </div>
-                      <div className="flex items-center gap-3 bg-white/50 px-3 py-2 border border-[#e5e4de] rounded-[2px]">
-                        <span className="font-mono text-xs truncate max-w-[300px] md:max-w-none">{resolverTx}</span>
-                        <button
-                          className={`${styles.copyTrigger} relative flex items-center text-gray-400 hover:text-[#3d7068]`}
-                          onClick={() => copyToClipboard(resolverTx)}
-                        >
-                          <iconify-icon icon="lucide:copy" class="text-sm"></iconify-icon>
-                          <span className={styles.tooltip}>Copied!</span>
-                        </button>
+                    <div className="flex flex-col justify-between gap-3 border-b border-white/8 py-5 md:flex-row md:items-center">
+                      <div className="label">{escrow.txs.releaseTxHash ? 'RESOLVER TRANSACTION' : 'VERDICT TRANSACTION'}</div>
+                      <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[.02] px-3 py-2">
+                        <span className="mono max-w-[300px] truncate text-xs text-zinc-300 md:max-w-none">{resolverTx}</span>
+                        <button className="text-zinc-500 hover:text-[#b4f56b]" onClick={() => copyToClipboard(resolverTx)}><Copy size={13} /></button>
                       </div>
                     </div>
                   )}
                   {payoutTx && (
-                    <div className="py-6 border-b border-[#e5e4de] flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="font-mono text-[10px] tracking-[0.3em] uppercase opacity-40">XRPL Payout Transaction</div>
-                      <div className="flex items-center gap-3 bg-white/50 px-3 py-2 border border-[#e5e4de] rounded-[2px]">
-                        <span className="font-mono text-xs truncate max-w-[300px] md:max-w-none">{payoutTx}</span>
-                        <button
-                          className={`${styles.copyTrigger} relative flex items-center text-gray-400 hover:text-[#3d7068]`}
-                          onClick={() => copyToClipboard(payoutTx)}
-                        >
-                          <iconify-icon icon="lucide:copy" class="text-sm"></iconify-icon>
-                          <span className={styles.tooltip}>Copied!</span>
-                        </button>
+                    <div className="flex flex-col justify-between gap-3 border-b border-white/8 py-5 md:flex-row md:items-center">
+                      <div className="label">XRPL PAYOUT TRANSACTION</div>
+                      <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[.02] px-3 py-2">
+                        <span className="mono max-w-[300px] truncate text-xs text-zinc-300 md:max-w-none">{payoutTx}</span>
+                        <button className="text-zinc-500 hover:text-[#b4f56b]" onClick={() => copyToClipboard(payoutTx)}><Copy size={13} /></button>
                       </div>
                     </div>
                   )}
                   {escrow.fdc && (
-                    <div className="py-6 border-b border-[#e5e4de] flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="font-mono text-[10px] tracking-[0.3em] uppercase opacity-40">FDC Verification Round</div>
-                      <div className="font-mono text-sm">{escrow.fdc.votingRoundId}</div>
+                    <div className="flex flex-col justify-between gap-3 border-b border-white/8 py-5 md:flex-row md:items-center">
+                      <div className="label">FDC VERIFICATION ROUND</div>
+                      <div className="mono text-sm text-zinc-300">{escrow.fdc.votingRoundId}</div>
                     </div>
                   )}
-                  <div className="py-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="font-mono text-[10px] tracking-[0.3em] uppercase opacity-40">Beneficiary XRPL Address</div>
-                    <div className="font-mono text-xs opacity-80">{escrow.beneficiaryXrplAddress}</div>
+                  <div className="flex flex-col justify-between gap-3 py-5 md:flex-row md:items-center">
+                    <div className="label">BENEFICIARY XRPL ADDRESS</div>
+                    <div className="mono text-xs text-zinc-400">{escrow.beneficiaryXrplAddress}</div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row justify-center gap-4 mt-10">
+              <div className="mt-8 flex flex-col justify-center gap-4 md:flex-row">
                 {resolverTx && (
-                  <a
-                    href={EXPLORER.coston2Tx(resolverTx)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="cta-button px-8 py-4 text-white font-mono text-[10px] tracking-[0.25em] uppercase rounded-[2px] text-center"
-                  >
+                  <a href={EXPLORER.coston2Tx(resolverTx)} target="_blank" rel="noreferrer" className="rounded-full bg-[#b4f56b] px-8 py-4 text-center text-sm font-semibold text-[#0b0d10]">
                     View Transaction
                   </a>
                 )}
-                <Link
-                  to="/create"
-                  className="editorial-transition px-8 py-4 border border-[#e5e4de] hover:border-[#3d7068] hover:bg-white/50 text-[#1c1c1c] font-mono text-[10px] tracking-[0.25em] uppercase rounded-[2px] text-center"
-                >
+                <Link to="/create" className="rounded-full border border-white/15 px-8 py-4 text-center text-sm text-zinc-300 transition-colors hover:border-white/40 hover:text-white">
                   Create New Escrow
                 </Link>
               </div>

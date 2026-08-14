@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { FileText, Hourglass, Lock, Server, ShieldCheck, UploadCloud, X } from 'lucide-react';
 import NavBar from '../components/NavBar';
 import Footer from '../components/Footer';
 import BackgroundGrid from '../components/BackgroundGrid';
@@ -8,8 +9,13 @@ import { useWallet } from '../hooks/useWallet';
 import { submitRuleOnEvidence } from '../chain/writes';
 import { savePendingDispute } from '../chain/pendingDispute';
 import { padEscrowId } from '../utils/format';
-import styles from './SubmitEvidence.module.css';
 
+/**
+ * No Manus design exists for this screen (evidence submission is a real,
+ * multi-step encrypted write flow with no equivalent in the redesign) —
+ * extrapolated from the dark/lime card system, borrowing the two-column
+ * "party" split from the original app's own structure.
+ */
 export default function SubmitEvidence() {
   const { id = 'phase3' } = useParams<{ id: string }>();
   const { escrow } = useEscrowData(id);
@@ -45,9 +51,6 @@ export default function SubmitEvidence() {
         submittedAtUnix: Math.floor(Date.now() / 1000),
       });
       setSubmitted(true);
-      // Evidence is in — move on to the TEE arbitration step automatically
-      // rather than leaving the user stranded on a "submitted" screen with
-      // only a sidebar link as the way forward.
       setTimeout(() => navigate(`/escrow/${id}/dispute/ruling`), 1500);
     } catch (err) {
       setSubmitError((err as Error).message || 'Failed to submit evidence.');
@@ -57,157 +60,137 @@ export default function SubmitEvidence() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f6f2] relative selection:bg-[#3d7068] selection:text-white">
+    <div className="min-h-screen relative bg-[#0b0d10] text-zinc-100">
       <BackgroundGrid />
       <NavBar />
 
-      <main className="max-w-7xl mx-auto px-6 pt-48 pb-32 relative z-10">
-        <section className="mb-12 pb-12 border-b border-[#e5e4de]">
-          <div className="font-mono text-[10px] tracking-[0.3em] uppercase opacity-40 mb-4">Dispute Resolution — Evidence Phase</div>
-          <h1 className="font-serif text-[6vw] leading-none uppercase font-light tracking-tighter mb-4">Submit Your Evidence</h1>
-          <div className="font-mono text-[10px] tracking-[0.2em] uppercase opacity-60">
-            Escrow ID: {escrow ? `${padEscrowId(escrow.onChainEscrowId)} · ${escrow.contracts.escrowAddress}` : `…`}
+      <main className="relative z-10 px-5 py-10 lg:px-10 lg:py-16">
+        <div className="mx-auto max-w-[1440px]">
+          <div className="mb-10 border-b border-white/10 pb-8">
+            <div className="label text-[#b4f56b]">DISPUTE RESOLUTION — EVIDENCE PHASE</div>
+            <h1 className="display mt-4 text-5xl leading-[.95] text-white lg:text-6xl">Submit your evidence.</h1>
+            <div className="mono mt-4 text-xs text-zinc-500">
+              Escrow ID: {escrow ? `${padEscrowId(escrow.onChainEscrowId)} · ${escrow.contracts.escrowAddress}` : '…'}
+            </div>
           </div>
-        </section>
 
-        <div className="mb-16 p-8 border border-[#e5e4de] bg-[#3d7068]/5 flex flex-col md:flex-row items-center gap-6">
-          <div className="w-12 h-12 border border-[#3d7068]/20 flex items-center justify-center">
-            <iconify-icon icon="lucide:lock" class="text-2xl text-[#3d7068]"></iconify-icon>
+          <div className="mb-10 flex flex-col items-center gap-4 rounded-2xl border border-[#b4f56b]/20 bg-[#b4f56b]/[.04] p-6 md:flex-row">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#b4f56b]/20 text-[#b4f56b]"><Lock size={20} /></div>
+            <div>
+              <div className="label text-[#b4f56b]">END-TO-END ENCRYPTED</div>
+              <p className="mt-1 text-sm text-zinc-400">Your evidence is ECIES-encrypted on-chain. Only authorized parties and TEE resolvers can access it during active arbitration.</p>
+            </div>
           </div>
-          <div>
-            <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-[#3d7068] mb-1">End-to-End Encrypted</div>
-            <p className="font-sans italic text-base opacity-70">Your evidence is encrypted on-chain. Only authorized parties and TEE resolvers can access during active arbitration.</p>
-          </div>
-        </div>
 
-        <section className="grid md:grid-cols-2 gap-px bg-[#e5e4de] border border-[#e5e4de] mb-24">
-          <div className="bg-[#f7f6f2] p-12">
-            <div className="font-mono text-[10px] tracking-[0.3em] uppercase opacity-40 mb-8">Party A — You (Depositor)</div>
-            <div className="space-y-10">
-              <div className={`${styles.dashedUpload} p-12 text-center cursor-pointer group hover:bg-white/50 editorial-transition`}>
-                <iconify-icon icon="lucide:upload-cloud" class="text-4xl opacity-20 group-hover:opacity-40 mb-4"></iconify-icon>
-                <p className="font-sans text-sm opacity-50">Upload evidence or drag &amp; drop</p>
-                <div className="mt-4 font-mono text-[9px] tracking-[0.2em] uppercase opacity-30">Max size 25MB (Encrypted)</div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="h-px flex-1 bg-[#e5e4de]"></div>
-                <span className="font-mono text-[10px] opacity-40 uppercase">or</span>
-                <div className="h-px flex-1 bg-[#e5e4de]"></div>
-              </div>
-
-              <div className="space-y-4">
-                <label className="font-mono text-[10px] tracking-[0.2em] uppercase opacity-60 block">Written Testimony</label>
-                <textarea
-                  rows={4}
-                  value={testimony}
-                  onChange={(e) => setTestimony(e.target.value)}
-                  readOnly={submitted}
-                  placeholder="DESCRIBE THE DISPUTE DETAILS IN FULL..."
-                  className={`w-full bg-transparent border-b border-[#e5e4de] font-sans italic py-4 text-base opacity-70 placeholder:font-mono placeholder:text-[10px] placeholder:opacity-30 ${submitted ? 'opacity-30' : ''}`}
-                ></textarea>
-              </div>
-
-              <div className="p-6 border border-[#e5e4de] bg-white/30 flex items-center justify-between group">
-                <div className="flex items-center gap-4">
-                  <iconify-icon icon="lucide:file-text" class="text-2xl opacity-40"></iconify-icon>
-                  <div>
-                    <div className="font-mono text-[10px] uppercase opacity-70">Invoice-2024-0521.pdf</div>
-                    <div className="font-mono text-[9px] opacity-30">420 KB • PREVIEW READY</div>
-                  </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-[#111518] p-8">
+              <div className="label mb-8">PARTY A — YOU (DEPOSITOR)</div>
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-dashed border-white/15 p-10 text-center transition-colors hover:border-white/30">
+                  <UploadCloud className="mx-auto mb-4 text-zinc-600" size={32} />
+                  <p className="text-sm text-zinc-400">Upload evidence or drag &amp; drop</p>
+                  <div className="mt-3 label">MAX SIZE 25MB (ENCRYPTED)</div>
                 </div>
-                <button className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <iconify-icon icon="lucide:x" class="text-lg opacity-40 hover:text-red-800"></iconify-icon>
-                </button>
-              </div>
 
-              <div className="pt-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-px flex-1 bg-white/10" />
+                  <span className="text-[10px] uppercase text-zinc-600">or</span>
+                  <div className="h-px flex-1 bg-white/10" />
+                </div>
+
+                <div>
+                  <label className="label mb-3 block">WRITTEN TESTIMONY</label>
+                  <textarea
+                    rows={4}
+                    value={testimony}
+                    onChange={(e) => setTestimony(e.target.value)}
+                    readOnly={submitted}
+                    placeholder="Describe the dispute details in full…"
+                    className={`w-full rounded-xl border border-white/15 bg-[#0d1013] p-4 text-sm text-zinc-200 outline-none transition-colors focus:border-[#b4f56b]/60 ${submitted ? 'opacity-40' : ''}`}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[.02] p-4">
+                  <div className="flex items-center gap-3">
+                    <FileText size={20} className="text-zinc-500" />
+                    <div>
+                      <div className="text-xs text-zinc-300">Invoice-2024-0521.pdf</div>
+                      <div className="mt-0.5 text-[10px] text-zinc-600">420 KB · preview ready</div>
+                    </div>
+                  </div>
+                  <button className="text-zinc-600 hover:text-red-400"><X size={16} /></button>
+                </div>
+
                 <button
                   onClick={handleSubmit}
                   disabled={submitted || submitting}
-                  className="cta-button w-full py-6 text-white font-mono text-[10px] tracking-[0.25em] uppercase"
-                  style={{ opacity: submitted ? 0.5 : 1, cursor: submitted ? 'not-allowed' : 'pointer' }}
+                  className="w-full rounded-full bg-[#b4f56b] py-4 text-sm font-semibold text-[#0b0d10] transition-all disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {submitted ? '✓ Submitted' : submitting ? 'Submitting…' : 'Submit Your Evidence'}
+                  {submitted ? 'Submitted' : submitting ? 'Submitting…' : 'Submit your evidence'}
                 </button>
-                {submitted && (
-                  <p className="mt-6 text-center font-mono text-[10px] tracking-[0.2em] text-[#3d7068] uppercase opacity-80">
-                    ✓ Your evidence received — awaiting other party
-                  </p>
-                )}
-                {submitError && (
-                  <p className="mt-6 text-center font-mono text-[10px] tracking-[0.2em] text-red-700 uppercase break-words">
-                    {submitError}
-                  </p>
-                )}
+                {submitted && <p className="text-center text-xs uppercase tracking-wide text-[#b4f56b]">Your evidence received — awaiting other party</p>}
+                {submitError && <p className="break-words text-center text-xs uppercase tracking-wide text-red-400">{submitError}</p>}
               </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-[#0e1114] p-8 opacity-60">
+              <div className="label mb-8">PARTY B — COUNTERPARTY (RECEIVER)</div>
+              <div className="flex h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 text-center">
+                <Hourglass className="mb-4 text-zinc-700" size={28} />
+                <div className="rounded-full border border-white/10 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-zinc-500">Awaiting submission</div>
+              </div>
+              <p className="mt-6 text-center text-sm italic text-zinc-600">This party hasn't submitted their supporting documentation yet.</p>
             </div>
           </div>
 
-          <div className="bg-[#f7f6f2] p-12 opacity-50 select-none">
-            <div className="font-mono text-[10px] tracking-[0.3em] uppercase opacity-40 mb-8">Party B — Counterparty (Receiver)</div>
-            <div className="space-y-10">
-              <div className={`h-[240px] ${styles.dashedUpload} flex flex-col items-center justify-center p-12 text-center pointer-events-none`}>
-                <iconify-icon icon="lucide:hourglass" class="text-4xl opacity-10 mb-6"></iconify-icon>
-                <div className="px-4 py-2 border border-[#e5e4de] font-mono text-[10px] tracking-[0.2em] uppercase opacity-60">Awaiting submission</div>
-              </div>
-              <div className="space-y-6">
-                <div className="h-px w-full bg-[#e5e4de]"></div>
-                <p className="font-sans italic text-base opacity-40 text-center">This party hasn't submitted their supporting documentation yet.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mb-24 grid md:grid-cols-2 gap-12">
-          <div className="p-12 border border-[#e5e4de] bg-[#f7f6f2]/50">
-            <h2 className="font-serif text-3xl uppercase font-light mb-12 leading-tight">How Your Data<br />is Protected</h2>
-            <div className="space-y-12">
-              {[
-                { icon: 'lucide:lock', title: 'Client-Side Encryption', body: 'Evidence is encrypted in your browser using the counterparty and TEE public keys before it ever leaves your machine.' },
-                { icon: 'lucide:server', title: 'On-Chain Storage', body: 'Your encrypted payload is stored on the XRPL ledger with a cryptographic hash attestation for tamper-proof auditing.' },
-                { icon: 'lucide:shield-check', title: 'TEE Verification', body: 'Only verified TEE executors and authorized dispute parties can decrypt the data during the secure arbitration window.' },
-              ].map((row) => (
-                <div key={row.title} className="flex gap-6">
-                  <div className="w-10 h-10 border border-[#e5e4de] flex-shrink-0 flex items-center justify-center">
-                    <iconify-icon icon={row.icon} class="opacity-40"></iconify-icon>
+          <div className="mt-10 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-[#111518] p-8">
+              <h2 className="display text-2xl text-white">How your data is protected.</h2>
+              <div className="mt-8 space-y-6">
+                {[
+                  { icon: Lock, title: 'Client-side encryption', body: 'Evidence is encrypted in your browser using the TEE public key before it ever leaves your machine.' },
+                  { icon: Server, title: 'On-chain storage', body: 'Your encrypted payload is stored on-chain with a cryptographic hash attestation for tamper-proof auditing.' },
+                  { icon: ShieldCheck, title: 'TEE verification', body: 'Only verified TEE executors and authorized dispute parties can decrypt the data during the secure arbitration window.' },
+                ].map((row) => (
+                  <div key={row.title} className="flex gap-4">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-zinc-500"><row.icon size={16} /></div>
+                    <div>
+                      <div className="text-sm text-white">{row.title}</div>
+                      <p className="mt-1 text-xs leading-relaxed text-zinc-500">{row.body}</p>
+                    </div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-[#111518] p-8">
+              <h2 className="display text-2xl text-white">What happens next.</h2>
+              <div className="mt-8 space-y-8">
+                <div className="flex gap-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#b4f56b] font-mono text-[10px] text-[#0b0d10]">01</div>
                   <div>
-                    <div className="font-mono text-[10px] tracking-[0.2em] uppercase mb-2">{row.title}</div>
-                    <p className="font-sans text-sm opacity-70 leading-relaxed">{row.body}</p>
+                    <div className="text-sm font-medium text-white">Awaiting evidence</div>
+                    <p className="mt-1 text-xs leading-relaxed text-zinc-500">The dispute resolution protocol officially triggers once both parties have submitted their primary evidence or the 48h window expires.</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-12">
-            <h2 className="font-serif text-3xl uppercase font-light mb-12 leading-tight">What Happens<br />Next</h2>
-            <div className="relative">
-              <div className={styles.roadmapLine}></div>
-              <div className="space-y-20">
-                <div className="relative pl-12">
-                  <div className="absolute left-0 top-2 w-8 h-8 bg-[#3d7068] text-white flex items-center justify-center font-mono text-[10px] z-10">01</div>
-                  <h3 className="font-serif text-2xl uppercase mb-3">Awaiting Evidence</h3>
-                  <p className="font-sans text-base opacity-70 leading-relaxed">The dispute resolution protocol officially triggers once both parties have submitted their primary evidence or the 48h window expires.</p>
-                </div>
-                <button
-                  onClick={() => navigate(`/escrow/${id}/dispute/ruling`)}
-                  className="relative pl-12 text-left block w-full"
-                >
-                  <div className="absolute left-0 top-2 w-8 h-8 border border-[#e5e4de] bg-[#f7f6f2] flex items-center justify-center font-mono text-[10px] z-10 opacity-40">02</div>
-                  <h3 className="font-serif text-2xl uppercase mb-3 opacity-40">TEE Arbitration</h3>
-                  <p className="font-sans text-base opacity-40 leading-relaxed">Encrypted evidence is reviewed within a secure enclave to determine the validity of the claims against the original escrow conditions.</p>
+                <button onClick={() => navigate(`/escrow/${id}/dispute/ruling`)} className="flex w-full gap-4 text-left">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 font-mono text-[10px] text-zinc-600">02</div>
+                  <div>
+                    <div className="text-sm font-medium text-zinc-500">TEE arbitration</div>
+                    <p className="mt-1 text-xs leading-relaxed text-zinc-600">Encrypted evidence is reviewed within a secure enclave to determine the validity of the claims against the original escrow conditions.</p>
+                  </div>
                 </button>
-                <div className="relative pl-12">
-                  <div className="absolute left-0 top-2 w-8 h-8 border border-[#e5e4de] bg-[#f7f6f2] flex items-center justify-center font-mono text-[10px] z-10 opacity-40">03</div>
-                  <h3 className="font-serif text-2xl uppercase mb-3 opacity-40">Verdict &amp; Payout</h3>
-                  <p className="font-sans text-base opacity-40 leading-relaxed">The final outcome is recorded on-chain, and assets are automatically distributed to the determined wallet addresses.</p>
+                <div className="flex gap-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 font-mono text-[10px] text-zinc-600">03</div>
+                  <div>
+                    <div className="text-sm font-medium text-zinc-500">Verdict &amp; payout</div>
+                    <p className="mt-1 text-xs leading-relaxed text-zinc-600">The final outcome is recorded on-chain, and assets are automatically distributed to the determined wallet addresses.</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
       </main>
 
       <Footer />

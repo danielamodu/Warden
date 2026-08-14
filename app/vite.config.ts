@@ -1,13 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  plugins: [react()],
-  // We intentionally use the Tailwind CDN script (see index.html), not a
-  // build-time Tailwind/PostCSS pipeline. Vite otherwise walks up parent
-  // directories looking for a postcss config file, which can pick up an
-  // unrelated one outside this project; an empty inline config disables
-  // that search entirely.
+  plugins: [react(), tailwindcss()],
+  // @tailwindcss/vite processes Tailwind directly and needs no PostCSS
+  // config of its own — but Vite otherwise walks up parent directories
+  // looking for one, which can pick up an unrelated postcss.config.mjs that
+  // lives outside this project (confirmed: one exists at the Desktop level,
+  // referencing a `@tailwindcss/postcss` package this project doesn't
+  // install). An empty inline config disables that upward search entirely.
   css: {
     postcss: {},
   },
@@ -29,7 +31,12 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/xrpl-rpc/, ''),
       },
       '/tee-proxy': {
-        target: process.env.VITE_TEE_EXTENSION_PROXY_URL || 'https://exciting-acre-intersection-tvs.trycloudflare.com',
+        // Was still pointing at the old local-Docker/cloudflared tunnel,
+        // which no longer resolves (DNS failure, live-confirmed) since the
+        // TEE was migrated to AWS — kept in sync with chain/config.ts's
+        // TEE_EXTENSION_PROXY_URL fallback; see that file for verification
+        // details.
+        target: process.env.VITE_TEE_EXTENSION_PROXY_URL || 'https://100-63-86-147.sslip.io',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/tee-proxy/, ''),
       },

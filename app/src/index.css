@@ -1,150 +1,176 @@
-/* Shared "editorial" design tokens and animations, deduped across all ten
-   ported Superdesign drafts. Page-specific custom classes that differ (or
-   collide by name) between drafts live in each page's *.module.css file. */
+@import "tailwindcss";
+
+/* Warden dark/lime design system — ported from the Manus redesign's visual
+   language (colors, type scale, grid background, roadmap scroller) and
+   re-applied on top of this app's real Coston2/XRPL data layer. */
+
+@theme inline {
+  --color-background: #0b0d10;
+  --color-foreground: #f4f6f6;
+  --color-card: #111518;
+  --color-card-foreground: #f4f6f6;
+  --color-primary: #b4f56b;
+  --color-primary-foreground: #0b0d10;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, monospace;
+}
 
 :root {
-  --editorial-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --bg-color: #f7f6f2;
-  --fg-color: #1c1c1c;
-  --accent-color: #3d7068;
-  --border-color: #e5e4de;
-  --secondary-accent: #B4B4B4;
-  --success-color: #4a9d6f;
-  --dispute-color: #d97706;
+  color-scheme: dark;
+  font-family: "DM Sans", sans-serif;
+  background: #0b0d10;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html,
+html {
+  scroll-behavior: smooth;
+  background: #0b0d10;
+}
+
 body {
-  background-color: var(--bg-color);
-  color: var(--fg-color);
-  font-family: 'Space Grotesk', sans-serif;
   margin: 0;
-  padding: 0;
+  min-width: 320px;
+  background: #0b0d10;
+  color: #f4f6f6;
   overflow-x: hidden;
 }
 
-.font-serif { font-family: 'Playfair Display', serif; }
-.font-mono { font-family: 'Space Mono', monospace; }
-.font-sans { font-family: 'Space Grotesk', sans-serif; }
-
-.editorial-transition {
-  transition: all 800ms var(--editorial-ease);
+button,
+a,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
-/* Fixed background grid used on every page */
-.bg-grid-fixed {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
+button {
+  cursor: pointer;
 }
 
-.vertical-lines {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  justify-content: space-evenly;
+::selection {
+  background: #b4f56b;
+  color: #09100b;
 }
 
-.vertical-line {
-  width: 1px;
-  height: 100%;
-  background-color: var(--border-color);
+@keyframes floatGrid {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 0 46px, 46px 0; }
 }
 
-.square-grid {
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(var(--border-color) 1px, transparent 1px),
-                    linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask-image: radial-gradient(circle at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 70%);
-  -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 70%);
+.grid-bg {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 46px 46px;
+  animation: floatGrid 18s linear infinite;
 }
 
-/* Editorial CTA button */
-.cta-button {
+.noise {
   position: relative;
-  overflow: hidden;
-  background-color: var(--accent-color);
-  transition: letter-spacing 700ms var(--editorial-ease);
-  z-index: 10;
+  isolation: isolate;
 }
 
-.cta-button::after {
-  content: '';
+.noise::after {
+  content: "";
   position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(100%);
-  transition: transform 700ms var(--editorial-ease);
+  inset: 0;
+  pointer-events: none;
   z-index: -1;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
 }
 
-.cta-button:hover:not(:disabled) {
-  letter-spacing: 0.4em !important;
+.display {
+  font-family: "Space Grotesk", sans-serif;
+  letter-spacing: -0.03em;
 }
 
-.cta-button:hover:not(:disabled)::after {
-  transform: translateY(0);
+.mono {
+  font-family: "Space Mono", monospace;
 }
 
-.cta-button:active {
-  transform: scale(0.98);
+.label {
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #7c858d;
 }
 
-/* Editorial hover card, used across nearly every page (paired with an
-   explicit Tailwind `border border-[#e5e4de]` utility on the element so the
-   border renders even where a draft's own CSS baked it into this class). */
-.card-editorial {
-  background-color: transparent;
-  transition: all 700ms var(--editorial-ease);
+.text-balance {
+  text-wrap: balance;
 }
 
-.card-editorial:hover {
-  background-color: rgba(255, 255, 255, 0.98);
-  border-color: var(--accent-color);
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
-/* Scroll-triggered word reveal */
-.word-reveal span {
-  opacity: 0.15;
-  transition: opacity 1000ms var(--editorial-ease);
-  display: inline-block;
-  margin-right: 0.25em;
-}
-.word-reveal span.active {
-  opacity: 1;
+/* Roadmap interaction: preserve horizontal discovery without the native scrollbar chrome. */
+.roadmap-scroller {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
 }
 
-/* Nav bar scroll state, toggled by NavBar's own scroll listener */
-.nav-scrolled {
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
-  background-color: rgba(247, 246, 242, 0.95);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-color);
+.roadmap-scroller::-webkit-scrollbar {
+  display: none;
 }
 
-@keyframes pulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(61, 112, 104, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(61, 112, 104, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(61, 112, 104, 0); }
+.roadmap-nav-button {
+  display: inline-flex;
+  height: 32px;
+  width: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: #b4f56b;
+  background: rgba(255, 255, 255, 0.035);
+  transition:
+    transform 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
 }
 
-@keyframes scan {
-  0% { top: 0; }
-  100% { top: 100%; }
+.roadmap-nav-button:hover {
+  border-color: rgba(180, 245, 107, 0.65);
+  background: rgba(180, 245, 107, 0.12);
+  color: #d8ff9f;
+  transform: translateY(-2px);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.roadmap-nav-button:active {
+  transform: translateY(0) scale(0.94);
+}
+
+/* Primary lime actions keep their ink dark and readable across links and buttons. */
+[class~="bg-\[\#b4f56b\]"] {
+  color: #0b0d10 !important;
+  -webkit-text-fill-color: #0b0d10;
+}
+
+[class~="bg-\[\#b4f56b\]"] svg {
+  color: #0b0d10 !important;
+  stroke: #0b0d10;
+}
+
+/* Shared navigation active state: explicit dark ink on white pills, overriding inherited anchor color. */
+.nav-pill-active,
+.nav-pill-active:hover,
+.nav-pill-active:focus-visible,
+.nav-pill-active * {
+  color: #0b0d10 !important;
+  -webkit-text-fill-color: #0b0d10 !important;
 }
